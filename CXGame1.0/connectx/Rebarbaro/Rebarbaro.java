@@ -113,6 +113,7 @@ public class Rebarbaro implements CXPlayer {
 		if (T.size() > 0) {
 			Integer[] X = T.toArray(new Integer[T.size()]);
             return X[X.length / 2];    //central columns are better
+			
 		} else {
 			return L[rand.nextInt(L.length)];
 		}
