@@ -31,7 +31,8 @@ public class Rebarbaro implements CXPlayer {
     }
 
 	public static int minimax(CXBoard B, int depth, int alpha, int beta, boolean maximizingPlayer) {
-		if (depth == 0 || B.checkForWin(1) || B.checkForWin(2) || B.getAvailableColumns().length == 0) {
+		//if (depth == 0 || B.checkForWin(1) || B.checkForWin(2) || B.getAvailableColumns().length == 0) {
+		if (depth == 0 || singleMoveWin(B, L) || B.getAvailableColumns().length == 0) {
 			// Leaf node or game over
 			return evaluate(B);
 		}
@@ -40,9 +41,14 @@ public class Rebarbaro implements CXPlayer {
 			// Maximize player 1's score
 			int maxScore = Integer.MIN_VALUE;
 			for (int col : B.getAvailableColumns()) {
-				CXBoard newBoard = B.getDeepCopy();
-				newBoard.makeMove(col, 1);
-				int score = minimax(newBoard, depth - 1, alpha, beta, false);
+				//CXBoard newBoard = B.getDeepCopy();
+				//newBoard.makeMove(col, 1);
+
+				B.markColumn(col);
+				int score = minimax(B, depth - 1, alpha, beta, false);
+				B.unmarkColumn();
+
+				//int score = minimax(newBoard, depth - 1, alpha, beta, false);
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
 				if (beta <= alpha) {
@@ -55,9 +61,12 @@ public class Rebarbaro implements CXPlayer {
 			// Minimize player 2's score
 			int minScore = Integer.MAX_VALUE;
 			for (int col : B.getAvailableColumns()) {
-				CXBoard newBoard = B.getDeepCopy();
-				newBoard.makeMove(col, 2);
-				int score = minimax(newBoard, depth - 1, alpha, beta, true);
+				//CXBoard newBoard = B.getDeepCopy();
+				//newBoard.makeMove(col, 2);
+				B.markColumn(col);
+				int score = -minimax(newBoard, depth - 1, alpha, beta, true);
+				B.unmarkColumn();
+				//int score = minimax(newBoard, depth - 1, alpha, beta, true);
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
@@ -70,20 +79,29 @@ public class Rebarbaro implements CXPlayer {
 	}
 
 	public static int evaluate(CXBoard B) {
-		// Evaluate the score of the current board position
-		// This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
-		int[] scores = B.getScores();
-		int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
-		int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
-		return score1 - score2;
-	}
+		/*
+		 * 
+		 // Evaluate the score of the current board position
+		 // This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
+		 int[] scores = B.getScores();
+		 int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
+		 int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
+		 return score1 - score2;
+		 */
+		if(singleMoveWin(B, L) != -1) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
+	}    
 
 	public static int selectColumn(CXBoard B, int depth) {
 		int bestScore = Integer.MIN_VALUE;
 		int bestCol = -1;
 		for (int col : B.getAvailableColumns()) {
-			CXBoard newBoard = B.getDeepCopy();
-			newBoard.makeMove(col, 1);
+			//CXBoard newBoard = B.getDeepCopy();
+			//newBoard.makeMove(col, 1);
 			int score = minimax(newBoard, depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
 			if (score > bestScore) {
 				bestScore = score;
@@ -93,7 +111,9 @@ public class Rebarbaro implements CXPlayer {
 		return bestCol;
 	}
 
-	public boolean checkForWin(int player) {
+	//esiste singleMoveWin() del prof che funziona meglio
+	//quella cambia che invece che ritornare un booleano ti ritorna la colonna se puoi vincere altrimenti -1
+	public boolean checkForWin(int player) {    
 		int[][] directions = {{1, 0}, {0, 1}, {1, 1}, {-1, 1}}; // directions to search for win
 		for (int row = 0; row < board.length; row++) {
 			for (int col = 0; col < board[0].length; col++) {
@@ -132,6 +152,83 @@ public class Rebarbaro implements CXPlayer {
 	
 		return newBoard;
 	}
+/*
+ * 
+ private int[] getScores(CXBoard B, int player) {
+	 int[] scores = new int[L];
+	 
+	 for (int col = 0; col < B.getN(); col++) {
+		 if (B.fullColumn(col)) {
+			 scores[col] = -1;
+			 continue;
+			}
+			
+			// Place the piece in the column
+			CXCell cell = B.placePiece(col, player);
+			int score = 0;
+			
+			// Check horizontal score
+			for (int i = -k + 1; i < k; i++) {
+				int count = 0;
+				for (int j = i; j < i + k; j++) {
+					if (B.isInside(cell.getRow(), cell.getCol() + j) && B.getCell(cell.getRow(), cell.getCol() + j) == player) {
+						count++;
+					}
+				}
+				if (count == k) {
+					score = Integer.MAX_VALUE; // Win condition
+					break;
+				} else {
+					score += count * count;
+				}
+			}
+	
+			if (score == Integer.MAX_VALUE) {
+				scores[col] = Integer.MAX_VALUE;
+				B.undoLastMove();
+				continue;
+			}
+	
+			// Check vertical score
+			for (int i = -k + 1; i < k; i++) {
+				int count = 0;
+				for (int j = i; j < i + k; j++) {
+					if (B.isInside(cell.getRow() + j, cell.getCol()) && B.getCell(cell.getRow() + j, cell.getCol()) == player) {
+						count++;
+					}
+				}
+				score += count * count;
+			}
+	
+			// Check diagonal score (top-left to bottom-right)
+			for (int i = -k + 1; i < k; i++) {
+				int count = 0;
+				for (int j = i; j < i + k; j++) {
+					if (B.isInside(cell.getRow() + j, cell.getCol() + j) && B.getCell(cell.getRow() + j, cell.getCol() + j) == player) {
+						count++;
+					}
+				}
+				score += count * count;
+			}
+	
+			// Check diagonal score (top-right to bottom-left)
+			for (int i = -k + 1; i < k; i++) {
+				int count = 0;
+				for (int j = i; j < i + k; j++) {
+					if (B.isInside(cell.getRow() + j, cell.getCol() - j) && B.getCell(cell.getRow() + j, cell.getCol() - j) == player) {
+						count++;
+					}
+				}
+				score += count * count;
+			}
+			
+			scores[col] = score;
+			B.undoLastMove();
+		}
+		
+		return scores;
+	}
+	*/
 	
     /**
 	 * Selects a free colum on game board.
@@ -141,18 +238,18 @@ public class Rebarbaro implements CXPlayer {
 	 * cases do not apply, selects a random column.
 	 * </p>
 	 */
-/* 	public int selectColumn(CXBoard B) {
+	/* 	public int selectColumn(CXBoard B) {
 		START = System.currentTimeMillis(); // Save starting time
-
+		
 		Integer[] L = B.getAvailableColumns();
 		int save    = L[rand.nextInt(L.length)]; // Save a random column 
-
+		
 		try {
 			int col = singleMoveWin(B,L);
 			if(col != -1) 
-				return col;
+			return col;
 			else
-				return singleMoveBlock(B,L);
+			return singleMoveBlock(B,L);
 		} catch (TimeoutException e) {
 			System.err.println("Timeout!!! Random column selected");
 			return save;
