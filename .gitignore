@@ -1,7 +1,8 @@
-*.class
-*.java
-/L0/*.class
-/L0/*.java
-/L1/*.class
-/L1/*.java
-/Rebarbaro/*.class
+CXGame1.0/connectx/*.java
+CXGame1.0/connectx/*.class
+CXGame1.0/connectx/L0/*.class
+CXGame1.0/connectx/L0/*.java
+CXGame1.0/connectx/L1/*.class
+CXGame1.0/connectx/L1/*.java
+CXGame1.0/connectx/Rebarbaro/*.class
+CXGame1.0/connectx/CXBoard.java
