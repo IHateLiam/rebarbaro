@@ -1,2 +1,7 @@
-
 *.class
+*.java
+/L0/*.class
+/L0/*.java
+/L1/*.class
+/L1/*.java
+/Rebarbaro/*.class
