@@ -30,8 +30,24 @@ public class Rebarbaro implements CXPlayer {
 		TIMEOUT = timeout_in_secs;
     }
 
-	public int minimax(CXBoard B, int depth, int alpha, int beta, boolean maximizingPlayer) {
+	public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns();
+		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1 
+		L = B.getAvailableColumns();
+		
+		System.err.print("col: " + firstMove + " ");
+		System.err.print("depth:" + depth + "\t\t");
+
+		if (state == yourWin) {
+			B.unmarkColumn();
+			return -1;
+		}
+		
+		if (state == myWin) {
+			B.unmarkColumn();
+			return 1;
+		}
+
 		//if (depth == 0 || B.checkForWin(1) || B.checkForWin(2) || B.getAvailableColumns().length == 0) {
 		int winningColumn = -1;
 		try {
@@ -41,8 +57,15 @@ public class Rebarbaro implements CXPlayer {
 			winningColumn = -1;
 		}
 		if (depth == 0 || winningColumn != -1 || L.length == 0) {
-			// Leaf node or game over
-			return evaluate(B);
+			// Leaf node or game over		
+			if(state == myWin) {
+				B.unmarkColumn();                         //smarcamento numero 1 condizionale livello foglia 
+				return 1;
+			}
+			else {
+				B.unmarkColumn();                        //smarcamento numero 1 condizionale (else) livello foglia
+				return 0;
+			}
 		}
 
 
@@ -53,9 +76,14 @@ public class Rebarbaro implements CXPlayer {
 				//CXBoard newBoard = B.getDeepCopy();
 				//newBoard.makeMove(col, 1);
 
-				B.markColumn(col);
-				int score = minimax(B, depth - 1, alpha, beta, false);
-				B.unmarkColumn();
+				state = B.markColumn(col);                 //marcamento numero 2
+				if (state == myWin) {
+					B.unmarkColumn();					//smarcamento condizionale numero 2
+					return 1;
+				}
+				B.unmarkColumn();                      //smarcamento condizionale (else) numero 2
+				int score = minimax(B, depth - 1, col, alpha, beta, false);
+				//B.unmarkColumn();                          
 
 				//int score = minimax(newBoard, depth - 1, alpha, beta, false);
 				maxScore = Math.max(maxScore, score);
@@ -65,6 +93,9 @@ public class Rebarbaro implements CXPlayer {
 					break;
 				}
 			}
+
+
+			B.unmarkColumn();                              //smarcamento condizionale numero 1 nodo generico
 			return maxScore;
 		} else {
 			// Minimize player 2's score
@@ -73,9 +104,14 @@ public class Rebarbaro implements CXPlayer {
 				//CXBoard newBoard = B.getDeepCopy();
 				//newBoard.makeMove(col, 2);
 
-				B.markColumn(col);
-				int score = -minimax(B, depth - 1, alpha, beta, true);
+				state = B.markColumn(col);
+				if (state == myWin) {
+					B.unmarkColumn();
+					return 1;
+				}
 				B.unmarkColumn();
+				int score = -minimax(B, depth - 1, col, alpha, beta, true);
+				//B.unmarkColumn();
 				
 				//int score = minimax(newBoard, depth - 1, alpha, beta, true);
 				minScore = Math.min(minScore, score);
@@ -85,20 +121,23 @@ public class Rebarbaro implements CXPlayer {
 					break;
 				}
 			}
+
+			B.unmarkColumn();                              //smarcamento condizionale (else) numero 1 nodo generico
 			return minScore;
 		}
 	}
 
+	
+	/*
+	* 
+	// Evaluate the score of the current board position
+	// This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
+	int[] scores = B.getScores();
+	int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
+	int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
+	return score1 - score2;
+	*/
 	public int evaluate(CXBoard B) {
-		/*
-		 * 
-		 // Evaluate the score of the current board position
-		 // This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
-		 int[] scores = B.getScores();
-		 int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
-		 int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
-		 return score1 - score2;
-		 */
 		Integer[] L = B.getAvailableColumns();
 
 		int winningColumn = -1;
@@ -117,21 +156,23 @@ public class Rebarbaro implements CXPlayer {
 	}    
 
 	public int selectColumn(CXBoard B) {
-		START = System.currentTimeMillis();
-
+		START = System.currentTimeMillis();		
 		int bestScore = Integer.MIN_VALUE;
 		int bestCol = -1;
-		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns();
 
 		for (int col : L) {
 			//CXBoard newBoard = B.getDeepCopy();
 			//newBoard.makeMove(col, 1);
-			int score = minimax(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
-			if (score > bestScore) {
+			System.err.print("\n marked column: " + B.numOfMarkedCells());
+			System.err.println("\n\n");
+			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+			if (score >= bestScore) {
 				bestScore = score;
 				bestCol = col;
 			}
+			
 		}
 
 		if (bestCol == -1) {
@@ -307,14 +348,16 @@ public class Rebarbaro implements CXPlayer {
 	 * Returns the winning column if there is one, otherwise -1
 	 */	
 	private int singleMoveWin(CXBoard B, Integer[] L) throws TimeoutException {
-    for(int i : L) {
+		for(int i : L) {
 			checktime(); // Check timeout at every iteration
-      CXGameState state = B.markColumn(i);
-      if (state == myWin)
-        return i; // Winning column found: return immediately
-      B.unmarkColumn();
-    }
-		return -1;
+			CXGameState state = B.markColumn(i);
+			if (state == myWin){
+				B.unmarkColumn();
+				return i; // Winning column found: return immediately
+			}
+			B.unmarkColumn();
+		}
+			return -1;
 	}
 
 	/**
@@ -328,7 +371,7 @@ public class Rebarbaro implements CXPlayer {
 		for(int i : L) {
 			checktime();
 			T.add(i); // We consider column i as a possible move
-			B.markColumn(i);
+			B.markColumn(i);         //marcamento numero (1)
 
 			int j;
 			boolean stop;
@@ -337,15 +380,15 @@ public class Rebarbaro implements CXPlayer {
 				//try {Thread.sleep((int)(0.2*1000*TIMEOUT));} catch (Exception e) {} // Uncomment to test timeout
 				checktime();
 				if(!B.fullColumn(L[j])) {
-					CXGameState state = B.markColumn(L[j]);
+					CXGameState state = B.markColumn(L[j]);     //marcamento numero (2)
 					if (state == yourWin) {
 						T.remove(i); // We ignore the i-th column as a possible move
 						stop = true; // We don't need to check more
 					}
-					B.unmarkColumn(); // 
+					B.unmarkColumn(); //Unmark L[j] column (2) 
 				}
 			}
-			B.unmarkColumn();
+			B.unmarkColumn();        //smarcamento numero (1)
 		}
 
 		if (T.size() > 0) {
@@ -358,6 +401,6 @@ public class Rebarbaro implements CXPlayer {
 	}
 
 	public String playerName() {
-		return "Rebarbaro";
+		return "Rebarbarosessopazzofollesgravato";
 	}
 }
