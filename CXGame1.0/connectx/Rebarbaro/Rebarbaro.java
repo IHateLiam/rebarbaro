@@ -34,9 +34,6 @@ public class Rebarbaro implements CXPlayer {
 		Integer[] L = B.getAvailableColumns();
 		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1 
 		L = B.getAvailableColumns();
-		
-		System.err.print("col: " + firstMove + " ");
-		System.err.print("depth:" + depth + "\t\t");
 
 		if (state == yourWin) {
 			B.unmarkColumn();
@@ -165,8 +162,6 @@ public class Rebarbaro implements CXPlayer {
 		for (int col : L) {
 			//CXBoard newBoard = B.getDeepCopy();
 			//newBoard.makeMove(col, 1);
-			System.err.print("\n marked column: " + B.numOfMarkedCells());
-			System.err.println("\n\n");
 			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
 			if (score >= bestScore) {
 				bestScore = score;
