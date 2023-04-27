@@ -30,9 +30,65 @@ public class Rebarbaro implements CXPlayer {
 		TIMEOUT = timeout_in_secs;
     }
 
-	public int minimax(CXBoard B, int depth, int alpha, int beta, boolean maximizingPlayer) {
+	public int selectColumn(CXBoard B) {
+		START = System.currentTimeMillis();		
+		int bestScore = Integer.MIN_VALUE;
+		int bestCol = -1;
+		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns();
-		//if (depth == 0 || B.checkForWin(1) || B.checkForWin(2) || B.getAvailableColumns().length == 0) {
+
+		for (int col : L) {
+			System.err.print("\n marked column: " + B.numOfMarkedCells());
+			System.err.println("\n\n");
+
+			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
+			if (score > bestScore) {
+				bestScore = score;
+				bestCol = col;
+			}
+			
+			}
+
+		if (bestCol == -1) {
+			try {
+				bestCol = singleMoveBlock(B, L);
+			} catch(TimeoutException e) {
+				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn");
+			}
+		}
+
+		System.err.print("\n--- passo il turno ---\n\n");
+		return bestCol;
+	}
+
+	public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
+		Integer[] L = B.getAvailableColumns();
+		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1 
+		int score = 0;
+		System.err.print("col: " + firstMove + " ");
+		System.err.print("depth:" + depth + "\t\t");
+
+		
+		if (state == yourWin) {
+			B.unmarkColumn();
+			return maximizingPlayer ? -1 : 1;
+		}
+		
+		if (state == myWin) {
+			B.unmarkColumn();
+			return maximizingPlayer ? 1 : -1;
+		}
+		
+		else if(depth == 0 || state == CXGameState.DRAW){
+			B.unmarkColumn();
+			return 0;
+		}
+		
+
+
+		/*
+		i controlli sopra implementano già tuta questa merda qua sotto
+		
 		int winningColumn = -1;
 		try {
 			winningColumn = singleMoveWin(B, L);
@@ -44,20 +100,24 @@ public class Rebarbaro implements CXPlayer {
 			// Leaf node or game over
 			return evaluate(B);
 		}
+		*/
+		
 
-
+		L = B.getAvailableColumns();
 		if (maximizingPlayer) {
 			// Maximize player 1's score
 			int maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
-				//CXBoard newBoard = B.getDeepCopy();
-				//newBoard.makeMove(col, 1);
-
-				B.markColumn(col);
-				int score = minimax(B, depth - 1, alpha, beta, false);
-				B.unmarkColumn();
-
-				//int score = minimax(newBoard, depth - 1, alpha, beta, false);
+				/*
+				state = B.markColumn(col);                 //marcamento numero 2
+				if (state == myWin) {
+					B.unmarkColumn();					//smarcamento condizionale numero 2
+					return 1;
+				}
+				B.unmarkColumn();                      //smarcamento condizionale (else) numero 2
+				*/
+				score = minimax(B, depth - 1, col, alpha, beta, false);
+				
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
 				if (beta <= alpha) {
@@ -70,14 +130,15 @@ public class Rebarbaro implements CXPlayer {
 			// Minimize player 2's score
 			int minScore = Integer.MAX_VALUE;
 			for (int col : L) {
-				//CXBoard newBoard = B.getDeepCopy();
-				//newBoard.makeMove(col, 2);
-
-				B.markColumn(col);
-				int score = -minimax(B, depth - 1, alpha, beta, true);
+				/*
+				state = B.markColumn(col);
+				if (state == myWin) {
+					B.unmarkColumn();
+					return -1;
+				}
 				B.unmarkColumn();
-				
-				//int score = minimax(newBoard, depth - 1, alpha, beta, true);
+				int score = -minimax(B, depth - 1, col, alpha, beta, true);
+
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
