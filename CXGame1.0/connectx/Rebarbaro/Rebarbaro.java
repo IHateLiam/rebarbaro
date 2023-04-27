@@ -34,11 +34,14 @@ public class Rebarbaro implements CXPlayer {
 		START = System.currentTimeMillis();		
 		int bestScore = Integer.MIN_VALUE;
 		int bestCol = -1;
-		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns();
 
 		for (int col : L) {
-			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
+			System.err.print("\n marked column: " + B.numOfMarkedCells());
+			System.err.println("\n\n");
+
+			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
 			if (score > bestScore) {
 				bestScore = score;
 				bestCol = col;
@@ -53,13 +56,17 @@ public class Rebarbaro implements CXPlayer {
 				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn");
 			}
 		}
+
+		System.err.print("\n--- passo il turno ---\n\n");
 		return bestCol;
 	}
 
 	public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns();
 		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1 
-		L = B.getAvailableColumns();
+		int score = 0;
+		System.err.print("col: " + firstMove + " ");
+		System.err.print("depth:" + depth + "\t\t");
 
 		if (state == yourWin) {
 			B.unmarkColumn();
@@ -71,6 +78,13 @@ public class Rebarbaro implements CXPlayer {
 			return maximizingPlayer ? 1 : -1;
 		}
 
+		else if(depth == 0 || state == CXGameState.DRAW){
+			B.unmarkColumn();
+			return 0;
+		}
+
+		/*
+		i controlli sopra implementano gia' tuta questa merda qua sotto
 		
 		int winningColumn = -1;
 		try {
@@ -83,20 +97,23 @@ public class Rebarbaro implements CXPlayer {
 			// Leaf node or game over
 			return evaluate(B);
 		}
-
-
+		*/
+		
+		L = B.getAvailableColumns();
 		if (maximizingPlayer) {
 			// Maximize player 1's score
 			int maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
-
+				/*
+				 
 				state = B.markColumn(col);                 //marcamento numero 2
 				if (state == myWin) {
 					B.unmarkColumn();					//smarcamento condizionale numero 2
 					return 1;
 				}
 				B.unmarkColumn();                      //smarcamento condizionale (else) numero 2
-				int score = minimax(B, depth - 1, col, alpha, beta, false);
+				*/
+				score = minimax(B, depth - 1, col, alpha, beta, false);
 				
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
@@ -110,13 +127,16 @@ public class Rebarbaro implements CXPlayer {
 			// Minimize player 2's score
 			int minScore = Integer.MAX_VALUE;
 			for (int col : L) {
+				/*
+				 
 				state = B.markColumn(col);
 				if (state == myWin) {
 					B.unmarkColumn();
 					return 1;
 				}
 				B.unmarkColumn();
-				int score = -minimax(B, depth - 1, col, alpha, beta, true);
+				*/
+				score = -minimax(B, depth - 1, col, alpha, beta, true);
 
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
@@ -156,185 +176,7 @@ public class Rebarbaro implements CXPlayer {
 		}
 	}    
 
-	public int selectColumn(CXBoard B) {
-		START = System.currentTimeMillis();
 
-		int bestScore = Integer.MIN_VALUE;
-		int bestCol = -1;
-		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
-		Integer[] L = B.getAvailableColumns();
-
-		for (int col : L) {
-			//CXBoard newBoard = B.getDeepCopy();
-			//newBoard.makeMove(col, 1);
-			int score = minimax(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
-			if (score > bestScore) {
-				bestScore = score;
-				bestCol = col;
-			}
-		}
-
-		if (bestCol == -1) {
-			try {
-				bestCol = singleMoveBlock(B, L);
-			} catch(TimeoutException e) {
-				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn");
-			}
-		}
-		return bestCol;
-	}
-
-	//esiste singleMoveWin() del prof che funziona meglio
-	//quella cambia che invece che ritornare un booleano ti ritorna la colonna se puoi vincere altrimenti -1
-	/*
-	 * 
-	 public boolean checkForWin(int player) {    
-		 int[][] directions = {{1, 0}, {0, 1}, {1, 1}, {-1, 1}}; // directions to search for win
-		 for (int row = 0; row < board.length; row++) {
-			 for (int col = 0; col < board[0].length; col++) {
-				if (board[row][col] == player) {
-					for (int[] dir : directions) {
-						int count = 1; // count number of connected tokens in a direction
-						int r = row + dir[0];
-						int c = col + dir[1];
-						while (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] == player) {
-							count++;
-							r += dir[0];
-							c += dir[1];
-						}
-						if (count >= 4) {
-							return true; // found a win
-						}
-					}
-				}
-			}
-		}
-		return false; // no win found
-	}
-	*/
-	
-	//non ci serve copiare una nuova tabella quando possiamo direttamente fare markcolumn e e unmarkcolumn e vedere il gamestate direttamente dalla tabella originale
-	/*
-	 * 
-	 public CXBoard getDeepCopy() {
-		 int[][] newGrid = new int[getHeight()][getWidth()];
-		 
-		 // Copy the grid
-		 for (int row = 0; row < getHeight(); row++) {
-			 for (int col = 0; col < getWidth(); col++) {
-				 newGrid[row][col] = getCell(row, col);
-				}
-			}
-			
-			// Copy the other properties
-			CXBoard newBoard = new CXBoard(newGrid, getNextPlayer(), getLastMove(), getNumMoves());
-			
-			return newBoard;
-		}
-		*/
-/*
- * 
- private int[] getScores(CXBoard B, int player) {
-	 int[] scores = new int[L];
-	 
-	 for (int col = 0; col < B.getN(); col++) {
-		 if (B.fullColumn(col)) {
-			 scores[col] = -1;
-			 continue;
-			}
-			
-			// Place the piece in the column
-			CXCell cell = B.placePiece(col, player);
-			int score = 0;
-			
-			// Check horizontal score
-			for (int i = -k + 1; i < k; i++) {
-				int count = 0;
-				for (int j = i; j < i + k; j++) {
-					if (B.isInside(cell.getRow(), cell.getCol() + j) && B.getCell(cell.getRow(), cell.getCol() + j) == player) {
-						count++;
-					}
-				}
-				if (count == k) {
-					score = Integer.MAX_VALUE; // Win condition
-					break;
-				} else {
-					score += count * count;
-				}
-			}
-	
-			if (score == Integer.MAX_VALUE) {
-				scores[col] = Integer.MAX_VALUE;
-				B.undoLastMove();
-				continue;
-			}
-	
-			// Check vertical score
-			for (int i = -k + 1; i < k; i++) {
-				int count = 0;
-				for (int j = i; j < i + k; j++) {
-					if (B.isInside(cell.getRow() + j, cell.getCol()) && B.getCell(cell.getRow() + j, cell.getCol()) == player) {
-						count++;
-					}
-				}
-				score += count * count;
-			}
-	
-			// Check diagonal score (top-left to bottom-right)
-			for (int i = -k + 1; i < k; i++) {
-				int count = 0;
-				for (int j = i; j < i + k; j++) {
-					if (B.isInside(cell.getRow() + j, cell.getCol() + j) && B.getCell(cell.getRow() + j, cell.getCol() + j) == player) {
-						count++;
-					}
-				}
-				score += count * count;
-			}
-	
-			// Check diagonal score (top-right to bottom-left)
-			for (int i = -k + 1; i < k; i++) {
-				int count = 0;
-				for (int j = i; j < i + k; j++) {
-					if (B.isInside(cell.getRow() + j, cell.getCol() - j) && B.getCell(cell.getRow() + j, cell.getCol() - j) == player) {
-						count++;
-					}
-				}
-				score += count * count;
-			}
-			
-			scores[col] = score;
-			B.undoLastMove();
-		}
-		
-		return scores;
-	}
-	*/
-	
-    /**
-	 * Selects a free colum on game board.
-	 * <p>
-	 * Selects a winning column (if any), otherwise selects a column (if any) 
-	 * that prevents the adversary to win with his next move. If both previous
-	 * cases do not apply, selects a random column.
-	 * </p>
-	 */
-	/* 	public int selectColumn(CXBoard B) {
-		START = System.currentTimeMillis(); // Save starting time
-		
-		Integer[] L = B.getAvailableColumns();
-		int save    = L[rand.nextInt(L.length)]; // Save a random column 
-		
-		try {
-			int col = singleMoveWin(B,L);
-			if(col != -1) 
-			return col;
-			else
-			return singleMoveBlock(B,L);
-		} catch (TimeoutException e) {
-			System.err.println("Timeout!!! Random column selected");
-			return save;
-		}
-	} */
 
 	private void checktime() throws TimeoutException {
 		if ((System.currentTimeMillis() - START) / 1000.0 >= TIMEOUT * (99.0 / 100.0))
