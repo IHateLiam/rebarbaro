@@ -34,14 +34,11 @@ public class Rebarbaro implements CXPlayer {
 		START = System.currentTimeMillis();		
 		int bestScore = Integer.MIN_VALUE;
 		int bestCol = -1;
-		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns();
 
 		for (int col : L) {
-			System.err.print("\n marked column: " + B.numOfMarkedCells());
-			System.err.println("\n\n");
-
-			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
+			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
 			if (score > bestScore) {
 				bestScore = score;
 				bestCol = col;
@@ -56,19 +53,14 @@ public class Rebarbaro implements CXPlayer {
 				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn");
 			}
 		}
-
-		System.err.print("\n--- passo il turno ---\n\n");
 		return bestCol;
 	}
 
 	public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns();
 		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1 
-		int score = 0;
-		System.err.print("col: " + firstMove + " ");
-		System.err.print("depth:" + depth + "\t\t");
+		L = B.getAvailableColumns();
 
-		
 		if (state == yourWin) {
 			B.unmarkColumn();
 			return maximizingPlayer ? -1 : 1;
@@ -78,16 +70,7 @@ public class Rebarbaro implements CXPlayer {
 			B.unmarkColumn();
 			return maximizingPlayer ? 1 : -1;
 		}
-		
-		else if(depth == 0 || state == CXGameState.DRAW){
-			B.unmarkColumn();
-			return 0;
-		}
-		
 
-
-		/*
-		i controlli sopra implementano già tuta questa merda qua sotto
 		
 		int winningColumn = -1;
 		try {
@@ -100,23 +83,20 @@ public class Rebarbaro implements CXPlayer {
 			// Leaf node or game over
 			return evaluate(B);
 		}
-		*/
-		
 
-		L = B.getAvailableColumns();
+
 		if (maximizingPlayer) {
 			// Maximize player 1's score
 			int maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
-				/*
+
 				state = B.markColumn(col);                 //marcamento numero 2
 				if (state == myWin) {
 					B.unmarkColumn();					//smarcamento condizionale numero 2
 					return 1;
 				}
 				B.unmarkColumn();                      //smarcamento condizionale (else) numero 2
-				*/
-				score = minimax(B, depth - 1, col, alpha, beta, false);
+				int score = minimax(B, depth - 1, col, alpha, beta, false);
 				
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
@@ -130,11 +110,10 @@ public class Rebarbaro implements CXPlayer {
 			// Minimize player 2's score
 			int minScore = Integer.MAX_VALUE;
 			for (int col : L) {
-				/*
 				state = B.markColumn(col);
 				if (state == myWin) {
 					B.unmarkColumn();
-					return -1;
+					return 1;
 				}
 				B.unmarkColumn();
 				int score = -minimax(B, depth - 1, col, alpha, beta, true);
