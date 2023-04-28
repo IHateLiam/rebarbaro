@@ -67,6 +67,7 @@ public class Rebarbaro implements CXPlayer {
 	public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns();
 		CXGameState state = B.markColumn(firstMove);       //marcamento numero 1
+		maximizingPlayer = !maximizingPlayer;
 		
 		System.err.print("col: " + firstMove + " ");
 		System.err.print("depth:" + depth + "\t\t");
