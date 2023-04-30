@@ -17,6 +17,7 @@ public class Rebarbaro implements CXPlayer {
 	private CXGameState yourWin;
 	private int  TIMEOUT;
 	private long START;
+	private double[] columns_value;
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -28,35 +29,137 @@ public class Rebarbaro implements CXPlayer {
         myWin = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
+		columns_value = calculate_columns_value(N);
     }
 
-    
-
-    /**
-	 * Selects a free colum on game board.
-	 * <p>
-	 * Selects a winning column (if any), otherwise selects a column (if any) 
-	 * that prevents the adversary to win with his next move. If both previous
-	 * cases do not apply, selects a random column.
-	 * </p>
-	 */
 	public int selectColumn(CXBoard B) {
-		START = System.currentTimeMillis(); // Save starting time
+		START = System.currentTimeMillis(); //per il timeout
+		int bestScore = Integer.MIN_VALUE; //per il minimax
+		int bestCol = -1; //per il minimax
+		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
-		Integer[] L = B.getAvailableColumns();
-		int save    = L[rand.nextInt(L.length)]; // Save a random column 
+		for (int col : L) {
+			//System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
+			//System.err.println("\n\n"); //debug
 
-		try {
-			int col = singleMoveWin(B,L);
-			if(col != -1) 
-				return col;
-			else
-				return singleMoveBlock(B,L);
-		} catch (TimeoutException e) {
-			System.err.println("Timeout!!! Random column selected");
-			return save;
+			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
+
+			//System.err.print("score: " + score); //debug
+			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
+				bestScore = score; //lo aggiorno
+				bestCol = col; //e aggiorno la colonna migliore
+			}
+			
 		}
+
+		if (bestCol == -1) { //se non ho trovato nessuna mossa vincente
+			try { 
+				bestCol = singleMoveBlock(B, L); //provo a bloccare l'avversario
+			} catch(TimeoutException e) { //se non riesco
+				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn"); //debug
+			}
+		}
+
+		//System.err.print("\n--- passo il turno ---\n\n"); //debug
+		return bestCol; //ritorno la colonna migliore
 	}
+
+
+//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
+
+public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
+	Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
+	CXGameState state = B.markColumn(firstMove); //marco la prima mossa
+
+	//System.err.print("col: " + firstMove + " "); //debug
+	//System.err.print("depth:" + depth + "\t\t"); //debug
+
+	if (state == myWin) { //se ho vinto
+		B.unmarkColumn(); //tolgo la mossa
+		return 1; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+	}
+
+	else if (state == yourWin) { //se ha vinto l'avversario
+		B.unmarkColumn(); //tolgo la mossa
+		return -1; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+	}
+
+	else if(depth == 0 || state == CXGameState.DRAW){ //se sono arrivato alla profondita' massima o se ho pareggiato
+		B.unmarkColumn(); //tolgo la mossa
+		return 0; //ritorno 0
+	}
+
+	L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
+
+	if (maximizingPlayer) { 
+		// Maximize player 1's score
+		int maxScore = Integer.MIN_VALUE;
+		for (int col : L) {
+			
+			int score = minimax(B, depth - 1, col, alpha, beta, false);
+			score *= columns_value[col];
+			
+			maxScore = Math.max(maxScore, score);
+			alpha = Math.max(alpha, maxScore);
+			if (beta <= alpha) {
+				// Beta cutoff
+				break;
+			}
+			
+		}
+
+		B.unmarkColumn();
+		return maxScore;
+	} else {
+		// Minimize player 2's score
+		int minScore = Integer.MAX_VALUE;
+		for (int col : L) {
+			
+			int score = minimax(B, depth - 1, col, alpha, beta, true);
+			//score *= columns_value[col];
+
+			minScore = Math.min(minScore, score);
+			beta = Math.min(beta, minScore);
+			if (beta <= alpha) {
+				// Alpha cutoff
+				break;
+			}
+		}
+
+		B.unmarkColumn();
+		return minScore;
+	}
+}
+
+	public int evaluate(CXBoard B) {
+		/*
+		 * 
+		 // Evaluate the score of the current board position
+		 // This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
+		 int[] scores = B.getScores();
+		 int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
+		 int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
+		 return score1 - score2;
+		 */
+		Integer[] L = B.getAvailableColumns();
+
+		int winningColumn = -1;
+		try {
+			winningColumn = singleMoveWin(B, L);
+		} catch(TimeoutException e) {
+			winningColumn = -1;
+			System.err.println("Timeout!!! singleMoveWin ritorna -1 in evaluate");
+		}
+		if(winningColumn != -1) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
+	}    
+
+
 
 	private void checktime() throws TimeoutException {
 		if ((System.currentTimeMillis() - START) / 1000.0 >= TIMEOUT * (99.0 / 100.0))
@@ -122,4 +225,18 @@ public class Rebarbaro implements CXPlayer {
 	public String playerName() {
 		return "Rebarbaro";
 	}
+
+
+	public double[] calculate_columns_value(int boardWidth){
+		double[] columns_value = new double[boardWidth];
+		for(int i = 0; i < boardWidth; i++){
+			columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+		}
+		return columns_value;
+	}
+
+
+
 }
+
+
