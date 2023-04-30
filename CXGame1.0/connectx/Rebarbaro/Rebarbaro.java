@@ -29,7 +29,7 @@ public class Rebarbaro implements CXPlayer {
         myWin = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
-		columns_value = calculate_columns_value(M);
+		columns_value = calculate_columns_value(N);
     }
 
 	public int selectColumn(CXBoard B) {
@@ -106,11 +106,13 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 			
 			minScore = Math.min(minScore, score);
 			beta = Math.max(beta, minScore);
+			/*
+			
 			if (beta <= alpha) {
 				// Beta cutoff
 				break;
 			}
-			
+			*/
 		}
 
 		B.unmarkColumn();
@@ -126,10 +128,13 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 
 			maxScore = Math.max(maxScore, score);
 			alpha = Math.max(beta, maxScore);
-			if (beta <= alpha) {
-				// Alpha cutoff
-				break;
-			}
+			/*
+			 * 
+			 if (beta <= alpha) {
+				 // Alpha cutoff
+				 break;
+				}
+				*/
 		}
 
 		B.unmarkColumn();
