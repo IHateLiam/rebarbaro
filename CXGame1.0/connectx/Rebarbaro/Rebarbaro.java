@@ -17,6 +17,7 @@ public class Rebarbaro implements CXPlayer {
 	private CXGameState yourWin;
 	private int  TIMEOUT;
 	private long START;
+	private int[] columns_value;
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -28,6 +29,7 @@ public class Rebarbaro implements CXPlayer {
         myWin = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
+		columns_value = calculate_columns_value(M);
     }
 
 	public int selectColumn(CXBoard B) {
@@ -44,6 +46,8 @@ public class Rebarbaro implements CXPlayer {
 			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
 
 			System.err.print("score: " + score); //debug
+
+
 
 			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
 				bestScore = score; //lo aggiorno
@@ -63,6 +67,7 @@ public class Rebarbaro implements CXPlayer {
 		System.err.print("\n--- passo il turno ---\n\n"); //debug
 		return bestCol; //ritorno la colonna migliore
 	}
+
 
 //Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
 
@@ -96,6 +101,8 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 		for (int col : L) {
 			
 			int score = minimax(B, depth - 1, col, alpha, beta, false);
+
+			score *= columns_value[col];
 			
 			minScore = Math.min(minScore, score);
 			beta = Math.max(beta, minScore);
@@ -103,6 +110,7 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 				// Beta cutoff
 				break;
 			}
+			
 		}
 
 		B.unmarkColumn();
@@ -113,6 +121,8 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 		for (int col : L) {
 			
 			int score = -minimax(B, depth - 1, col, alpha, beta, true);
+
+			score *= columns_value[col];
 
 			maxScore = Math.max(maxScore, score);
 			alpha = Math.max(beta, maxScore);
@@ -220,7 +230,22 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 	public String playerName() {
 		return "Rebarbaro";
 	}
+
+
+public int[] calculate_columns_value(int boardWidth){
+	int[] columns_value = new int[boardWidth];
+	for(int i = 0; i < boardWidth; i++){
+		columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+	}
+	return columns_value;
 }
+
+
+
+}
+
+
+
 
 
 
