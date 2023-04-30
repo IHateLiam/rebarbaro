@@ -17,7 +17,7 @@ public class Rebarbaro implements CXPlayer {
 	private CXGameState yourWin;
 	private int  TIMEOUT;
 	private long START;
-	private int[] columns_value;
+	private double[] columns_value;
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -36,19 +36,15 @@ public class Rebarbaro implements CXPlayer {
 		START = System.currentTimeMillis(); //per il timeout
 		int bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
-		int depth = 1;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = 7;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
 		for (int col : L) {
-			System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
-			System.err.println("\n\n"); //debug
+			//System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
+			//System.err.println("\n\n"); //debug
 
 			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
-
-			System.err.print("score: " + score); //debug
-
-
-
+			//System.err.print("score: " + score); //debug
 			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
 				bestScore = score; //lo aggiorno
 				bestCol = col; //e aggiorno la colonna migliore
@@ -64,7 +60,7 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 
-		System.err.print("\n--- passo il turno ---\n\n"); //debug
+		//System.err.print("\n--- passo il turno ---\n\n"); //debug
 		return bestCol; //ritorno la colonna migliore
 	}
 
@@ -75,8 +71,8 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 	Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 	CXGameState state = B.markColumn(firstMove); //marco la prima mossa
 
-	System.err.print("col: " + firstMove + " "); //debug
-	System.err.print("depth:" + depth + "\t\t"); //debug
+	//System.err.print("col: " + firstMove + " "); //debug
+	//System.err.print("depth:" + depth + "\t\t"); //debug
 
 	if (state == myWin) { //se ho vinto
 		B.unmarkColumn(); //tolgo la mossa
@@ -90,7 +86,7 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 
 	else if(depth == 0 || state == CXGameState.DRAW){ //se sono arrivato alla profondita' massima o se ho pareggiato
 		B.unmarkColumn(); //tolgo la mossa
-		return 0; //ritorno 0
+		return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
 	}
 
 	L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
@@ -106,13 +102,13 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 			
 			minScore = Math.min(minScore, score);
 			beta = Math.max(beta, minScore);
-			/*
+			
 			
 			if (beta <= alpha) {
 				// Beta cutoff
 				break;
 			}
-			*/
+			
 		}
 
 		B.unmarkColumn();
@@ -122,19 +118,16 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 		int maxScore = Integer.MIN_VALUE;
 		for (int col : L) {
 			
-			int score = -minimax(B, depth - 1, col, alpha, beta, true);
+			int score = minimax(B, depth - 1, col, alpha, beta, true);
 
 			score *= columns_value[col];
 
 			maxScore = Math.max(maxScore, score);
 			alpha = Math.max(beta, maxScore);
-			/*
-			 * 
-			 if (beta <= alpha) {
-				 // Alpha cutoff
-				 break;
-				}
-				*/
+			if (beta <= alpha) {
+				// Alpha cutoff
+				break;
+			}
 		}
 
 		B.unmarkColumn();
@@ -237,8 +230,8 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 	}
 
 
-	public int[] calculate_columns_value(int boardWidth){
-		int[] columns_value = new int[boardWidth];
+	public double[] calculate_columns_value(int boardWidth){
+		double[] columns_value = new double[boardWidth];
 		for(int i = 0; i < boardWidth; i++){
 			columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
 		}
