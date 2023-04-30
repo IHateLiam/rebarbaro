@@ -237,13 +237,13 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 	}
 
 
-public int[] calculate_columns_value(int boardWidth){
-	int[] columns_value = new int[boardWidth];
-	for(int i = 0; i < boardWidth; i++){
-		columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+	public int[] calculate_columns_value(int boardWidth){
+		int[] columns_value = new int[boardWidth];
+		for(int i = 0; i < boardWidth; i++){
+			columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+		}
+		return columns_value;
 	}
-	return columns_value;
-}
 
 
 
