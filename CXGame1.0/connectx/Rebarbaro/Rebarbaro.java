@@ -240,6 +240,48 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 
 
 
+//inutilizzata. forse la useremo. non funziona granchè comunque
+	public int negaMax(CXBoard B, int depth, int firstMove, int alpha, int beta) {
+		//evaluate
+
+		CXGameState state = B.markColumn(firstMove);
+
+		System.err.print("col: " + firstMove + " "); //debug
+		System.err.print("depth:" + depth + "\t\t"); //debug
+
+		if (state == myWin) {
+			B.unmarkColumn();
+			return -1;
+		}
+
+		else if (state == yourWin) {
+			B.unmarkColumn();
+			return 1;
+		}
+
+		else if (depth == 0 || state == CXGameState.DRAW) {
+			B.unmarkColumn();
+			return 0;
+		}
+
+		int maxScore = Integer.MIN_VALUE;
+		int score;
+		
+		Integer[] L = B.getAvailableColumns();
+		for (int col : L) {
+			score = -negaMax(B, depth - 1, col, -beta, -alpha);
+			maxScore = Math.max(score, maxScore);
+			alpha = Math.max(alpha, score);
+			if (beta <= alpha) {
+				break;
+			}
+		}
+
+		B.unmarkColumn();
+		return maxScore;
+	}
+
+
 }
 
 
