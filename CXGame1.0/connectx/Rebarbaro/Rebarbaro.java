@@ -44,7 +44,7 @@ public class Rebarbaro implements CXPlayer {
 		START = System.currentTimeMillis(); //per il timeout
 		int bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
-		int depth = 5;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
 		for (int col : L) {
@@ -96,10 +96,10 @@ public class Rebarbaro implements CXPlayer {
 		}
 		*/
 
-		if(depth == 0 && state != CXGameState.DRAW){ //se sono arrivato alla profondita' massima o se ho pareggiato
+		if(depth == 0 || state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
-			int score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
+			int score = maximizingPlayer ? evaluationFunction(B) : -evaluationFunction(B);
 			B.unmarkColumn(); //tolgo la mossa
 			return score;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
