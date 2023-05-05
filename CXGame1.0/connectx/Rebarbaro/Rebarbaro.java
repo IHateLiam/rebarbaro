@@ -22,6 +22,7 @@ public class Rebarbaro implements CXPlayer {
 	private double[] columns_value;
 	int M, N, K;
 	CXCellState first;
+	private int DECISIONTREEDEPTH;
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -38,21 +39,23 @@ public class Rebarbaro implements CXPlayer {
 		this.N = N;
 		this.K = K;
 		this.first = first ? CXCellState.P1 : CXCellState.P2;
+		
+		this.DECISIONTREEDEPTH = 4;
     }
 
 	public int selectColumn(CXBoard B) {
 		START = System.currentTimeMillis(); //per il timeout
 		int bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
-		int depth = 4;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = DECISIONTREEDEPTH;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
 		for (int col : L) {
-			//System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
-			//System.err.println("\n\n"); //debug
+			System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
+			System.err.println("\n\n"); //debug
 
 			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
-			//System.err.print("score: " + score); //debug
+			System.err.print("score: " + score); //debug
 			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
 				bestScore = score; //lo aggiorno
 				bestCol = col; //e aggiorno la colonna migliore
@@ -68,7 +71,7 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 
-		//System.err.print("\n--- passo il turno ---\n\n"); //debug
+		System.err.print("\n--- passo il turno ---\n\n"); //debug
 		return bestCol; //ritorno la colonna migliore
 	}
 
@@ -79,27 +82,30 @@ public class Rebarbaro implements CXPlayer {
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 		CXGameState state = B.markColumn(firstMove); //marco la prima mossa
 
-		//System.err.print("col: " + firstMove + " "); //debug
-		//System.err.print("depth:" + depth + "\t\t"); //debug
+		System.err.print("\n");
+		for (int i = DECISIONTREEDEPTH; i > depth; i--) { System.err.print("\t");}
+		System.err.print("col: " + firstMove + " "); //debug
+		System.err.print("depth: " + depth + "\t\t"); //debug
 
-		/*
+		
 		if (state == myWin) { //se ho vinto
-			int eval = evaluationFunction(B);
+			//int eval = evaluationFunction(B);
 			B.unmarkColumn(); //tolgo la mossa
-			return eval; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+			return 10; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
 		}
 
 		else if (state == yourWin) { //se ha vinto l'avversario
-			int eval = evaluationFunction(B);
+			//int eval = evaluationFunction(B);
 			B.unmarkColumn(); //tolgo la mossa
-			return eval; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+			return -10; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
-		*/
+		
 
 		if(depth == 0 || state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
 			int score = maximizingPlayer ? evaluationFunction(B) : -evaluationFunction(B);
+			//System.err.print("evaluate: " + score);
 			B.unmarkColumn(); //tolgo la mossa
 			return score;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
@@ -117,7 +123,7 @@ public class Rebarbaro implements CXPlayer {
 			for (int col : L) {
 				
 				int score = minimax(B, depth - 1, col, alpha, beta, false);
-				System.err.print("score: " + score + "");
+				System.err.print("evaluate: " + score + " ");
 				score *= columns_value[col];
 				
 				minScore = Math.min(minScore, score);
@@ -164,7 +170,7 @@ public class Rebarbaro implements CXPlayer {
 		//for (int col = 0; col < N; col++) {
 			//for (int row = 0; row < M; row++) {
 				if (board.cellState(row, col) == myPiece) {
-					System.err.print("\nmyPiece " + row + " " + col);
+					//System.err.print("\nmyPiece " + row + " " + col);
 					myPieces++;
 					if (isVerticalWin(board, col, row, myPiece)) {
 						myVerticalWins++;
@@ -175,7 +181,7 @@ public class Rebarbaro implements CXPlayer {
 						myTwos++;
 					}
 				}
-					System.err.print("\nempty " + row + " " + col);
+					//System.err.print("\nempty " + row + " " + col);
 				//}
 			//}
 		
@@ -256,7 +262,7 @@ public class Rebarbaro implements CXPlayer {
 	public double[] calculate_columns_value(int boardWidth){
 		double[] columns_value = new double[boardWidth];
 		for(int i = 0; i < boardWidth; i++){
-			columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+			columns_value[i] =  i < boardWidth/2 ? ( 1 + i/(boardWidth/2) ) / 2 : ( 1 + (boardWidth - i)/(boardWidth/2) ) / 2;
 		}
 		return columns_value;
 	}

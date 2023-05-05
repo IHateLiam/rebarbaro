@@ -14,7 +14,7 @@ public class Combo {
     private Direction direction;
     private int length;
     private int value;
-    private int freeEnds;    //se è aperto sia da un'estremità che dall'altra
+    private int freeEnds;    //se e' aperto sia da un'estremita' che dall'altra
 
     public Combo() {
         cellList = new TreeSet<CXCell>();
