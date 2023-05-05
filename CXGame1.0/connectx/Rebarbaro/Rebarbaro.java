@@ -55,13 +55,15 @@ public class Rebarbaro implements CXPlayer {
 			System.err.println("\n\n"); //debug
 
 			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
-			System.err.print("score: " + score); //debug
+			System.err.print("\nscore: " + score); //debug
 			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
 				bestScore = score; //lo aggiorno
 				bestCol = col; //e aggiorno la colonna migliore
 			}
 			
 		}
+
+		System.err.print("\n bestCol: " + bestCol + " bestScore: " + bestScore);
 
 		if (bestCol == -1) { //se non ho trovato nessuna mossa vincente
 			try { 
