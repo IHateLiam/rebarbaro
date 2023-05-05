@@ -15,8 +15,16 @@ public class Combo {
     private int length;
     private int value;
     private int freeEnds;    //se e' aperto sia da un'estremita' che dall'altra
-
+    private CXCellState myCell;
+ 
     public Combo() {
+        cellList = new TreeSet<CXCell>();
+        length = 0;
+        value = 0;
+    }
+
+    public Combo(CXCellState myCell) {
+        this.myCell = myCell;
         cellList = new TreeSet<CXCell>();
         length = 0;
         value = 0;
@@ -32,6 +40,10 @@ public class Combo {
         length--;
     }
 
+    public TreeSet<CXCell> getCells() {
+        return cellList;
+    }
+
     public int getLength() {
         return length;
     }
@@ -44,6 +56,10 @@ public class Combo {
         return freeEnds;
     }
 
+    public void setNumberOfFreeEnds(int n) {
+        freeEnds = n;
+    }
+
     public Direction getDirection() {
         return direction;
     }
@@ -54,6 +70,17 @@ public class Combo {
     }
 
     public void calculateFreeEnds() {
+        if (this.direction == Direction.Vertical) {
+            if (cellList.last().state == CXCellState.FREE) {
+                freeEnds++;
+            }
+        }
+
+        else if (this.direction == Direction.Horizontal) {
+            if (cellList.last().state == CXCellState.FREE) {
+                freeEnds++;
+            }
+        }
         return;
     }
 }

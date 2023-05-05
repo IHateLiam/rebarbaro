@@ -10,6 +10,7 @@ import connectx.CXCellState;
 import java.util.TreeSet;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 
@@ -22,7 +23,11 @@ public class Rebarbaro implements CXPlayer {
 	private double[] columns_value;
 	int M, N, K;
 	CXCellState first;
+
+	//private List<Combo> combinations;
+
 	private int DECISIONTREEDEPTH;
+
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -39,6 +44,8 @@ public class Rebarbaro implements CXPlayer {
 		this.N = N;
 		this.K = K;
 		this.first = first ? CXCellState.P1 : CXCellState.P2;
+
+		//this.combinations = Combo();
 		
 		this.DECISIONTREEDEPTH = 4;
     }
@@ -103,7 +110,7 @@ public class Rebarbaro implements CXPlayer {
 		}
 		
 
-		if(depth == 0 || state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
+		if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
 			int score = maximizingPlayer ? evaluationFunction(B) : -evaluationFunction(B);
@@ -111,7 +118,7 @@ public class Rebarbaro implements CXPlayer {
 			B.unmarkColumn(); //tolgo la mossa
 			return score;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
-		} else if( depth == 0 && state == CXGameState.DRAW){
+		} else if( depth == 0 || state == CXGameState.DRAW){
 			B.unmarkColumn(); //tolgo la mossa
 			return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
 		}
@@ -367,6 +374,45 @@ public class Rebarbaro implements CXPlayer {
 		}
 			
 		return false;
+	}
+
+
+
+	public void calculateComboFreeEnds(CXBoard B, Combo combo) {
+		Direction comboDirection = combo.getDirection();
+		CXCell lastCell = combo.getCells().last();
+		int nFreeEnds = 0;
+
+		if(comboDirection == Direction.Vertical) {
+			if(!B.fullColumn(lastCell.j)) {
+				combo.setNumberOfFreeEnds(1);
+			}
+			return;
+		}
+
+		CXCell firstCell = combo.getCells().first();
+
+		if(comboDirection == Direction.Horizontal) {
+			if(B.cellState(lastCell.i + 1, lastCell.j) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			if(B.cellState(firstCell.i - 1, firstCell.j) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			combo.setNumberOfFreeEnds(nFreeEnds);
+			return;
+		}
+
+		if(comboDirection == Direction.Diagonal) {
+			if(B.cellState(lastCell.i + 1, lastCell.j + 1) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			if(B.cellState(firstCell.i - 1, firstCell.j - 1) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			combo.setNumberOfFreeEnds(nFreeEnds);
+			return;
+		}
 	}
 
 }
