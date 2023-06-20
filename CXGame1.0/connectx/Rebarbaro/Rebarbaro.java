@@ -5,9 +5,12 @@ import connectx.CXPlayer;
 import connectx.CXBoard;
 import connectx.CXGameState;
 import connectx.CXCell;
+import connectx.CXCellState;
+
 import java.util.TreeSet;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 
@@ -54,7 +57,7 @@ public class Rebarbaro implements CXPlayer {
 		START = System.currentTimeMillis(); //per il timeout
 		float bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
-		int depth = 7;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		int depth = DECISIONTREEDEPTH;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
 		float[] column_scores = new float[N];    //DEBUG debugMode     (la dichiarazione dentro l'if non va bene)
@@ -108,45 +111,51 @@ public class Rebarbaro implements CXPlayer {
 	}
 
 
-//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
+	//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
 
 	public float minimax(CXBoard B, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 		CXGameState state = B.markColumn(firstMove); //marco la prima mossa
 
-		System.err.print("\n");
-		for (int i = DECISIONTREEDEPTH; i > depth; i--) { System.err.print("\t");}
-		System.err.print("col: " + firstMove + " "); //debug
-		System.err.print("depth: " + depth + "\t\t"); //debug
-
+		if(debugMode){
+			System.err.print("\n");
+			for (int i = DECISIONTREEDEPTH; i > depth; i--) { System.err.print("\t");}
+			System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); //debug
+			System.err.print("col: " + firstMove + "\t\t" ); //debug
+		}
 		
 		if (state == myWin) { //se ho vinto
 			//int eval = evaluationFunction(B);
+			if(debugMode) {
+				System.err.print("|won | evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
+			}
 			B.unmarkColumn(); //tolgo la mossa
-			return 10; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+			return maximizingPlayer ? -1*depth : 1*depth; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
 		}
-
 		else if (state == yourWin) { //se ha vinto l'avversario
 			//int eval = evaluationFunction(B);
+			if(debugMode) {
+				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
+			}
 			B.unmarkColumn(); //tolgo la mossa
-			return -10; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+			return maximizingPlayer ? -1*depth : 1*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
-		
-
-		if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
+		else if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
-			int score = maximizingPlayer ? evaluationFunction(B) : -evaluationFunction(B);
+			//int score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
 			//System.err.print("evaluate: " + score);
 			B.unmarkColumn(); //tolgo la mossa
-			return score;
+			return 0;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
 		} else if( depth == 0 || state == CXGameState.DRAW){
 			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
+			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
+			return 0;
 		}
 
-	L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
+
+		L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
 
 		if (maximizingPlayer) { 
 			// Maximize player 1's score
@@ -186,32 +195,39 @@ public class Rebarbaro implements CXPlayer {
 		}
 	}
 
-	public int evaluate(CXBoard B) {
-		/*
-		 * 
-		 // Evaluate the score of the current board position
-		 // This implementation simply counts the number of 1-in-a-row, 2-in-a-row, and 3-in-a-row for each player
-		 int[] scores = B.getScores();
-		 int score1 = scores[0] + 2 * scores[1] + 10 * scores[2];
-		 int score2 = scores[0] + 2 * scores[2] + 10 * scores[4];
-		 return score1 - score2;
-		 */
-		Integer[] L = B.getAvailableColumns();
+	public int evaluationFunction(CXBoard board) {
+		int myPieces = 0;
+		int myThrees = 0;
+		int myTwos = 0;
+		int myVerticalWins = 0;
+		CXCellState myPiece = first;
+		CXCell lastCell = board.getLastMove();
+		int row = lastCell.i;
+		int col = lastCell.j;
 
-		int winningColumn = -1;
-		try {
-			winningColumn = singleMoveWin(B, L);
-		} catch(TimeoutException e) {
-			winningColumn = -1;
-			System.err.println("Timeout!!! singleMoveWin ritorna -1 in evaluate");
-		}
-		if(winningColumn != -1) {
-			return 1;
-		}
-		else {
-			return 0;
-		}
-	}    
+		//for (int col = 0; col < N; col++) {
+			//for (int row = 0; row < M; row++) {
+				if (board.cellState(row, col) == myPiece) {
+					//System.err.print("\nmyPiece " + row + " " + col);
+					myPieces++;
+					if (isVerticalWin(board, col, row, myPiece)) {
+						myVerticalWins++;
+					}
+					else if (isHorizontalWin(board, col, row, myPiece) || isDiagonalWin(board, col, row, myPiece)) {
+						myThrees++;
+					} else if (isTwoInARow(board, col, row, myPiece)) {
+						myTwos++;
+					}
+				}
+					//System.err.print("\nempty " + row + " " + col);
+				//}
+			//}
+		
+
+		int score = (myThrees * 5) + (myTwos * 3) + (2* myVerticalWins);
+		return score;
+	}
+
 
 
 
@@ -289,54 +305,143 @@ public class Rebarbaro implements CXPlayer {
 		return columns_value;
 	}
 
-
-
-//inutilizzata. forse la useremo. non funziona granchè comunque
-	public int negaMax(CXBoard B, int depth, int firstMove, int alpha, int beta) {
-		//evaluate
-
-		CXGameState state = B.markColumn(firstMove);
-
-		System.err.print("col: " + firstMove + " "); //debug
-		System.err.print("depth:" + depth + "\t\t"); //debug
-
-		if (state == myWin) {
-			B.unmarkColumn();
-			return -1;
-		}
-
-		else if (state == yourWin) {
-			B.unmarkColumn();
-			return 1;
-		}
-
-		else if (depth == 0 || state == CXGameState.DRAW) {
-			B.unmarkColumn();
-			return 0;
-		}
-
-		int maxScore = Integer.MIN_VALUE;
-		int score;
-		
-		Integer[] L = B.getAvailableColumns();
-		for (int col : L) {
-			score = -negaMax(B, depth - 1, col, -beta, -alpha);
-			maxScore = Math.max(score, maxScore);
-			alpha = Math.max(alpha, score);
-			if (beta <= alpha) {
+	public boolean isVerticalWin(CXBoard B, int col, int row, CXCellState piece){
+		//System.err.print("verticale\t"+ col + "\t" + row + "\t" + piece + "\t");
+		int count = 1;
+		int i = row + 1;
+		while(i < M){
+			if(B.cellState(i, col) == piece){
+				count++;
+			}
+			else{
 				break;
 			}
+			i++;
 		}
+		i = row - 1;
+		while(i >= 0){
+			if(B.cellState(i, col) == piece){
+				count++;
+			}
+			else{
+				break;
+			}
+			i--;
+		}
+		//System.err.print("\n");
+		return count >= K;
+	}
 
-		B.unmarkColumn();
-		return maxScore;
+	public boolean isDiagonalWin(CXBoard B, int col, int row, CXCellState piece){
+		//System.err.print("diagonale\t");
+		int count = 1;
+		int i = row + 1;
+		int j = col + 1;
+		while(i < M && j < N){
+			if(B.cellState(i, j) == piece){
+				count++;
+			}
+			else{
+				break;
+			}
+			i++;
+			j++;
+		}
+		i = row - 1;
+		j = col - 1;
+		while(i >= 0 && j >= 0){
+			if(B.cellState(i, j) == piece){
+				count++;
+			}
+			else{
+				break;
+			}
+			i--;
+			j--;
+		}
+		//System.err.print("\n");
+		return count >= K;
+	}
+
+	public boolean isHorizontalWin(CXBoard B, int col, int row, CXCellState piece){
+		//System.err.print("orizzontale\t");
+		int count = 1;
+		int i = col + 1;
+		while(i < N){
+			if(B.cellState(row, i) == piece){
+				count++;
+			}
+			else{
+				break;
+			}
+			i++;
+		}
+		i = col - 1;
+		while(i >= 0){
+			if(B.cellState(row, i) == piece){
+				count++;
+			}
+			else{
+				break;
+			}
+			i--;
+		}
+		//System.err.print("\n");
+		return count >= K;
+	}
+
+	public boolean isTwoInARow(CXBoard B, int col, int row, CXCellState piece){
+		//System.err.print("due in linea\t");
+		if(row + 1 < M && B.cellState(row, col) == piece){
+			return true;
+		} else if(row - 1 >= 0 && B.cellState(row, col) == piece){
+			return true;
+		} else if(col + 1 < N && B.cellState(row, col) == piece){
+			return true;
+		} else if(col - 1 < 0 && B.cellState(row, col) == piece){
+			return true;
+		}
+			
+		return false;
 	}
 
 
+
+	public void calculateComboFreeEnds(CXBoard B, Combo combo) {
+		Direction comboDirection = combo.getDirection();
+		CXCell lastCell = combo.getCells().last();
+		int nFreeEnds = 0;
+
+		if(comboDirection == Direction.Vertical) {
+			if(!B.fullColumn(lastCell.j)) {
+				combo.setNumberOfFreeEnds(1);
+			}
+			return;
+		}
+
+		CXCell firstCell = combo.getCells().first();
+
+		if(comboDirection == Direction.Horizontal) {
+			if(B.cellState(lastCell.i + 1, lastCell.j) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			if(B.cellState(firstCell.i - 1, firstCell.j) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			combo.setNumberOfFreeEnds(nFreeEnds);
+			return;
+		}
+
+		if(comboDirection == Direction.Diagonal) {
+			if(B.cellState(lastCell.i + 1, lastCell.j + 1) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			if(B.cellState(firstCell.i - 1, firstCell.j - 1) == CXCellState.FREE) {
+				nFreeEnds++;
+			}
+			combo.setNumberOfFreeEnds(nFreeEnds);
+			return;
+		}
+	}
+
 }
-
-
-
-
-
-
