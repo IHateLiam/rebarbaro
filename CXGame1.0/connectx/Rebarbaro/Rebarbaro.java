@@ -18,6 +18,14 @@ public class Rebarbaro implements CXPlayer {
 	private int  TIMEOUT;
 	private long START;
 	private double[] columns_value;
+	int M, N, K;
+	CXCellState first;
+	private boolean debugMode;
+
+	//private List<Combo> combinations;
+
+	private int DECISIONTREEDEPTH;
+
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -30,27 +38,53 @@ public class Rebarbaro implements CXPlayer {
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
 		columns_value = calculate_columns_value(N);
+		this.M = M;
+		this.N = N;
+		this.K = K;
+		this.first = first ? CXCellState.P1 : CXCellState.P2;
+
+		//this.combinations = Combo();
+		
+		this.DECISIONTREEDEPTH = 4;
+
+		debugMode = false;
     }
 
 	public int selectColumn(CXBoard B) {
 		START = System.currentTimeMillis(); //per il timeout
-		int bestScore = Integer.MIN_VALUE; //per il minimax
+		float bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
 		int depth = 7;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
-		for (int col : L) {
-			//System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
-			//System.err.println("\n\n"); //debug
+		float[] column_scores = new float[N];    //DEBUG debugMode     (la dichiarazione dentro l'if non va bene)
 
-			int score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, true); //minimax
-			//System.err.print("score: " + score); //debug
-			if (score > bestScore) { //se il punteggio E' migliore di quello attuale
+		for (int col : L) {
+
+			if(debugMode){
+				System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
+				System.err.println("\n\n"); //debug
+			}
+
+
+			float score = minimax(B, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false); //minimax
+			score += 0.01;     //se e' tutto a 0, la moltiplicazione dei valori delle colonne viene annullata
+			score *= columns_value[col];
+
+			if (score >= bestScore) { //se il punteggio E' migliore di quello attuale
 				bestScore = score; //lo aggiorno
 				bestCol = col; //e aggiorno la colonna migliore
 			}
+
+
+			if(debugMode) {
+				System.err.print("\nscore: " + score);
+				column_scores[col] = score;
+			}
 			
 		}
+
+		if(debugMode){System.err.print("\n bestCol: " + bestCol + " bestScore: " + bestScore);}
 
 		if (bestCol == -1) { //se non ho trovato nessuna mossa vincente
 			try { 
@@ -60,80 +94,97 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 
-		//System.err.print("\n--- passo il turno ---\n\n"); //debug
+		if(debugMode){
+			System.err.print("\n bestCol: " + bestCol + " bestScore: " + bestScore);
+
+			System.err.print("\n" + "punteggi colonne:\n");
+			for(int i = 0; i < N; i++) {
+				System.err.print("colonna " + i + ": " + String.format("%9f", column_scores[i]) + "\tvalore colonna: " + columns_value[i] + "\n");
+			}
+		}
+
+		
 		return bestCol; //ritorno la colonna migliore
 	}
 
 
 //Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
 
-public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boolean maximizingPlayer) {
-	Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
-	CXGameState state = B.markColumn(firstMove); //marco la prima mossa
+	public float minimax(CXBoard B, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer) {
+		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
+		CXGameState state = B.markColumn(firstMove); //marco la prima mossa
 
-	//System.err.print("col: " + firstMove + " "); //debug
-	//System.err.print("depth:" + depth + "\t\t"); //debug
+		System.err.print("\n");
+		for (int i = DECISIONTREEDEPTH; i > depth; i--) { System.err.print("\t");}
+		System.err.print("col: " + firstMove + " "); //debug
+		System.err.print("depth: " + depth + "\t\t"); //debug
 
-	if (state == myWin) { //se ho vinto
-		B.unmarkColumn(); //tolgo la mossa
-		return (depth + 1) * (1); //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
-	}
+		
+		if (state == myWin) { //se ho vinto
+			//int eval = evaluationFunction(B);
+			B.unmarkColumn(); //tolgo la mossa
+			return 10; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+		}
 
-	else if (state == yourWin) { //se ha vinto l'avversario
-		B.unmarkColumn(); //tolgo la mossa
-		return (depth + 1) * (-1); //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
-	}
+		else if (state == yourWin) { //se ha vinto l'avversario
+			//int eval = evaluationFunction(B);
+			B.unmarkColumn(); //tolgo la mossa
+			return -10; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+		}
+		
 
-	else if(depth == 0 || state == CXGameState.DRAW){ //se sono arrivato alla profondita' massima o se ho pareggiato
-		B.unmarkColumn(); //tolgo la mossa
-		return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
-	}
+		if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
+			//B.unmarkColumn(); //tolgo la mossa
+			//return evaluationFunction(B);
+			int score = maximizingPlayer ? evaluationFunction(B) : -evaluationFunction(B);
+			//System.err.print("evaluate: " + score);
+			B.unmarkColumn(); //tolgo la mossa
+			return score;
+			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
+		} else if( depth == 0 || state == CXGameState.DRAW){
+			B.unmarkColumn(); //tolgo la mossa
+			return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
+		}
 
 	L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
 
-	if (maximizingPlayer) { 
-		// Maximize player 1's score
-		int minScore = Integer.MAX_VALUE;
-		for (int col : L) {
-			
-			int score = minimax(B, depth - 1, col, alpha, beta, false);
-
-			score *= columns_value[col];
-			
-			minScore = Math.min(minScore, score);
-			beta = Math.max(beta, minScore);
-			
-			
-			if (beta <= alpha) {
-				// Beta cutoff
-				break;
+		if (maximizingPlayer) { 
+			// Maximize player 1's score
+			float maxScore = Integer.MIN_VALUE;
+			for (int col : L) {
+				
+				float score = minimax(B, depth - 1, col, alpha, beta, false);
+				if(debugMode){System.err.print("evaluate: " + score + " ");}
+				
+				maxScore = Math.max(maxScore, score);
+				alpha = Math.max(alpha, score);
+				if (beta <= alpha) {
+					// Beta cutoff
+					break;
+				}
+				
 			}
-			
-		}
+			B.unmarkColumn();
+			return maxScore;
 
-		B.unmarkColumn();
-		return minScore;
-	} else {
-		// Minimize player 2's score
-		int maxScore = Integer.MIN_VALUE;
-		for (int col : L) {
-			
-			int score = minimax(B, depth - 1, col, alpha, beta, true);
-
-			score *= columns_value[col];
-
-			maxScore = Math.max(maxScore, score);
-			alpha = Math.max(beta, maxScore);
-			if (beta <= alpha) {
-				// Alpha cutoff
-				break;
+		} else {
+			// Minimize player 2's score
+			float minScore = Integer.MAX_VALUE;
+			for (int col : L) {
+				
+				float score = minimax(B, depth - 1, col, alpha, beta, true);
+				
+				minScore = Math.min(minScore, score);
+				beta = Math.min(beta, score);
+				if (beta <= alpha) {
+					// Alpha cutoff
+					break;
+				}
 			}
+			B.unmarkColumn();
+			return minScore;
 		}
-
-		B.unmarkColumn();
-		return maxScore;
 	}
-}
 
 	public int evaluate(CXBoard B) {
 		/*
@@ -232,8 +283,8 @@ public int minimax(CXBoard B, int depth, int firstMove, int alpha, int beta, boo
 
 	public double[] calculate_columns_value(int boardWidth){
 		double[] columns_value = new double[boardWidth];
-		for(int i = 0; i < boardWidth; i++){
-			columns_value[i] =  i < boardWidth/2 ? 1 + i/(boardWidth/2) : 1 + (boardWidth - i)/(boardWidth/2);
+		for(float i = 0; i < boardWidth; i++){
+			columns_value[(int)i] =  i < boardWidth/2 ? ( 1 + (i + 1)/(boardWidth/2) ) / 2 : ( 1 + (boardWidth - i)/(boardWidth/2) ) / 2;
 		}
 		return columns_value;
 	}
