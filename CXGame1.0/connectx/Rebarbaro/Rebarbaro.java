@@ -30,10 +30,13 @@ public class Rebarbaro implements CXPlayer {
 	private int DECISIONTREEDEPTH;
 
 
+
+
     /*Default empty constructor*/
     public Rebarbaro() {
 
     }
+
 
     public void initPlayer(int M, int N, int K, boolean first, int timeout_in_secs) {
         rand = new Random(System.currentTimeMillis());
@@ -52,6 +55,7 @@ public class Rebarbaro implements CXPlayer {
 
 		debugMode = false;
     }
+
 
 	public int selectColumn(CXBoard B) {
 		START = System.currentTimeMillis(); //per il timeout
@@ -195,6 +199,7 @@ public class Rebarbaro implements CXPlayer {
 		}
 	}
 
+
 	public int evaluationFunction(CXBoard board) {
 		int myPieces = 0;
 		int myThrees = 0;
@@ -236,6 +241,7 @@ public class Rebarbaro implements CXPlayer {
 			throw new TimeoutException();
 	}
 
+
 	/**
 	 * Check if we can win in a single move
 	 *
@@ -251,6 +257,7 @@ public class Rebarbaro implements CXPlayer {
     }
 		return -1;
 	}
+
 
 	/**
    * Check if we can block adversary's victory 
@@ -292,6 +299,7 @@ public class Rebarbaro implements CXPlayer {
 		}
 	}
 
+
 	public String playerName() {
 		return "Rebarbaro";
 	}
@@ -304,6 +312,7 @@ public class Rebarbaro implements CXPlayer {
 		}
 		return columns_value;
 	}
+
 
 	public boolean isVerticalWin(CXBoard B, int col, int row, CXCellState piece){
 		//System.err.print("verticale\t"+ col + "\t" + row + "\t" + piece + "\t");
@@ -331,6 +340,7 @@ public class Rebarbaro implements CXPlayer {
 		//System.err.print("\n");
 		return count >= K;
 	}
+
 
 	public boolean isDiagonalWin(CXBoard B, int col, int row, CXCellState piece){
 		//System.err.print("diagonale\t");
@@ -363,6 +373,7 @@ public class Rebarbaro implements CXPlayer {
 		return count >= K;
 	}
 
+
 	public boolean isHorizontalWin(CXBoard B, int col, int row, CXCellState piece){
 		//System.err.print("orizzontale\t");
 		int count = 1;
@@ -389,6 +400,7 @@ public class Rebarbaro implements CXPlayer {
 		//System.err.print("\n");
 		return count >= K;
 	}
+	
 
 	public boolean isTwoInARow(CXBoard B, int col, int row, CXCellState piece){
 		//System.err.print("due in linea\t");
