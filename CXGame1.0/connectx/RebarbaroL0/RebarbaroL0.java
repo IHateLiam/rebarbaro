@@ -1,4 +1,4 @@
-package connectx.Rebarbaro;
+package connectx.RebarbaroL0;
 
 
 import connectx.CXPlayer;
@@ -13,23 +13,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import java.util.HashMap;
-import java.security.MessageDigest;
-import java.nio.charset.StandardCharsets;
-import java.math.BigInteger;
 
-
-public class Rebarbaro implements CXPlayer {
+public class RebarbaroL0 implements CXPlayer {
     private Random rand;
 	private CXGameState myWin;
 	private CXGameState yourWin;
 	private int  TIMEOUT;
 	private long START;
 	private double[] columns_value;
-	private int M, N, K;
+	int M, N, K;
 	CXCellState first;
 	private boolean debugMode;
-	private HashMap<String, Float> transpositionTable = new HashMap<String, Float>();
 
 	//private List<Combo> combinations;
 
@@ -39,7 +33,7 @@ public class Rebarbaro implements CXPlayer {
 
 
     /*Default empty constructor*/
-    public Rebarbaro() {
+    public RebarbaroL0() {
 
     }
 
@@ -74,7 +68,6 @@ public class Rebarbaro implements CXPlayer {
 
 		for (int col : L) {
 			try{
-				transpositionTable.clear();
 
 				if(debugMode){
 					System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
@@ -124,8 +117,8 @@ public class Rebarbaro implements CXPlayer {
 				System.err.print("colonna " + i + ": " + String.format("%9f", column_scores[i]) + "\tvalore colonna: " + columns_value[i] + "\n");
 			}
 		}
+
 		
-		//addHash(B, null);
 		return bestCol; //ritorno la colonna migliore
 	}
 
@@ -149,7 +142,7 @@ public class Rebarbaro implements CXPlayer {
 				System.err.print("|won | evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
 			}
 			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? -(K*4)*depth : (K*4)*depth; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+			return maximizingPlayer ? -1*depth : 1*depth; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
 		}
 		else if (state == yourWin) { //se ha vinto l'avversario
 			//int eval = evaluationFunction(B);
@@ -157,18 +150,17 @@ public class Rebarbaro implements CXPlayer {
 				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
 			}
 			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? -(K*4)*depth : (K*4)*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+			return maximizingPlayer ? -1*depth : 1*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
 		else if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
-			int score = maximizingPlayer ? -evaluationFunction(B)*depth : evaluationFunction(B)*depth;
+			//int score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
 			//System.err.print("evaluate: " + score);
 			B.unmarkColumn(); //tolgo la mossa
-			return score;
-			//return 0;
+			return 0;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
-	 	} else if(depth == 0 || state == CXGameState.DRAW){
+		} else if( depth == 0 || state == CXGameState.DRAW){
 			B.unmarkColumn(); //tolgo la mossa
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
 			return 0;
@@ -182,16 +174,7 @@ public class Rebarbaro implements CXPlayer {
 			float maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
 				
-				/*
-				if(transpositionTable.containsKey(B)){
-					float score = transpositionTable.get(B);
-					B.unmarkColumn();
-					return score;
-				}
-				*/
-
 				float score = minimax(B, depth - 1, col, alpha, beta, false);
-
 				if(debugMode){System.err.print("evaluate: " + score + " ");}
 				
 				maxScore = Math.max(maxScore, score);
@@ -204,40 +187,57 @@ public class Rebarbaro implements CXPlayer {
 			}
 			B.unmarkColumn();
 			return maxScore;
-			
+
 		} else {
 			// Minimize player 2's score
 			float minScore = Integer.MAX_VALUE;
 			for (int col : L) {
 				
-				
 				float score = minimax(B, depth - 1, col, alpha, beta, true);
+				
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
 					// Alpha cutoff
 					break;
-					}
+				}
 			}
 			B.unmarkColumn();
 			return minScore;
 		}
-
 	}
 
 
 	public int evaluationFunction(CXBoard board) {
+		int myPieces = 0;
+		int myThrees = 0;
+		int myTwos = 0;
+		int myVerticalWins = 0;
 		CXCellState myPiece = first;
 		CXCell lastCell = board.getLastMove();
 		int row = lastCell.i;
 		int col = lastCell.j;
 
-		int verticalPieces = nearPieces(row, col, board, lastCell.state, K, 1);
-		int orizzontalPieces = nearPieces(row, col, board, lastCell.state, K, 2);
-		int diagonalPieces = nearPieces(row, col, board, lastCell.state, K, 3);
-		int antiDiagonalPieces = nearPieces(row, col, board, lastCell.state, K, 4);
+		//for (int col = 0; col < N; col++) {
+			//for (int row = 0; row < M; row++) {
+				if (board.cellState(row, col) == myPiece) {
+					//System.err.print("\nmyPiece " + row + " " + col);
+					myPieces++;
+					if (isVerticalWin(board, col, row, myPiece)) {
+						myVerticalWins++;
+					}
+					else if (isHorizontalWin(board, col, row, myPiece) || isDiagonalWin(board, col, row, myPiece)) {
+						myThrees++;
+					} else if (isTwoInARow(board, col, row, myPiece)) {
+						myTwos++;
+					}
+				}
+					//System.err.print("\nempty " + row + " " + col);
+				//}
+			//}
 		
-		int score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
+
+		int score = (myThrees * 5) + (myTwos * 3) + (2* myVerticalWins);
 		return score;
 	}
 
@@ -309,7 +309,7 @@ public class Rebarbaro implements CXPlayer {
 
 
 	public String playerName() {
-		return "Rebarbaro";
+		return "RebarbaroL0";
 	}
 
 
@@ -425,62 +425,8 @@ public class Rebarbaro implements CXPlayer {
 		return false;
 	}
 
-	public int nearPieces(int col, int row, CXBoard board, CXCellState player, int n, int direction) {
-    int count = 0;
-    int deltaRow = 0;
-    int deltaCol = 0;
 
-    switch (direction) {
-        case 1: // verticale
-            deltaRow = 1;
-            break;
-        case 2: // orizzontale
-            deltaCol = 1;
-            break;
-        case 3: // diagonale
-            deltaRow = 1;
-            deltaCol = 1;
-            break;
-        case 4: // diagonale inversa
-            deltaRow = -1;
-            deltaCol = 1;
-            break;
-        default:
-            break;
-    }
-
-    int currentRow = row + deltaRow;
-    int currentCol = col + deltaCol;
-
-    while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
-        if (board.cellState(currentRow, currentCol) == player) {
-            count++;
-        } else {
-            break;
-        }
-        currentRow += deltaRow;
-        currentCol += deltaCol;
-    }
-
-	if(direction == 3 || direction == 4){
-		//caso diagonale speculare
-		deltaRow = -deltaRow;
-		deltaCol = -deltaCol;
-			while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
-			if (board.cellState(currentRow, currentCol) == player) {
-				count++;
-			} else {
-				break;
-			}
-			currentRow += deltaRow;
-			currentCol += deltaCol;
-		}
-    }
-
-    return count;
-}
-
-
+/*
 	public void calculateComboFreeEnds(CXBoard B, Combo combo) {
 		Direction comboDirection = combo.getDirection();
 		CXCell lastCell = combo.getCells().last();
@@ -517,35 +463,5 @@ public class Rebarbaro implements CXPlayer {
 			return;
 		}
 	}
-
-
-	public void addHash(CXBoard B, Float value){
-		String board = "";
-		CXCell[] L = B.getMarkedCells(); 
-		for(CXCell i : L){
-			board += i.i;
-			board += i.j;
-		}
-		try{
-			board = hash(board);
-			transpositionTable.put(board, value);
-			System.err.println(board);
-		} catch(Exception e){
-			System.err.println("Errore nell'aggiunta della board alla transposition table");
-		}
-	}
-
-
-	public String hash(String input) throws Exception {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-        BigInteger number = new BigInteger(1, hash);
-        StringBuilder hexString = new StringBuilder(number.toString(16));
-        while (hexString.length() < 32) {
-            hexString.insert(0, '0');
-        }
-        return hexString.toString();
-    }
+*/
 }
-
-
