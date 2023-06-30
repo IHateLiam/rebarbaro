@@ -118,7 +118,7 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 		
-		addHash(B, null);
+		//addHash(B, null);
 		return bestCol; //ritorno la colonna migliore
 	}
 
@@ -150,15 +150,16 @@ public class Rebarbaro implements CXPlayer {
 				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
 			}
 			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? -1*depth : 1*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+			return maximizingPlayer ? -100*depth : 100*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
 		else if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
 			//B.unmarkColumn(); //tolgo la mossa
 			//return evaluationFunction(B);
-			//int score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
+			int score = maximizingPlayer ? -evaluationFunction(B)*depth : evaluationFunction(B)*depth;
 			//System.err.print("evaluate: " + score);
 			B.unmarkColumn(); //tolgo la mossa
-			return 0;
+			return score;
+			//return 0;
 			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
 		} else if( depth == 0 || state == CXGameState.DRAW){
 			B.unmarkColumn(); //tolgo la mossa
@@ -174,12 +175,16 @@ public class Rebarbaro implements CXPlayer {
 			float maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
 				
+				/*
 				if(transpositionTable.containsKey(B)){
+					float score = transpositionTable.get(B);
 					B.unmarkColumn();
-					return transpositionTable.get(B);
+					return score;
 				}
+				*/
 
 				float score = minimax(B, depth - 1, col, alpha, beta, false);
+
 				if(debugMode){System.err.print("evaluate: " + score + " ");}
 				
 				maxScore = Math.max(maxScore, score);
@@ -198,10 +203,6 @@ public class Rebarbaro implements CXPlayer {
 			float minScore = Integer.MAX_VALUE;
 			for (int col : L) {
 				
-				if(transpositionTable.containsKey(B)){
-					B.unmarkColumn();
-					return transpositionTable.get(B);
-				}
 				
 				float score = minimax(B, depth - 1, col, alpha, beta, true);
 				minScore = Math.min(minScore, score);
@@ -219,35 +220,17 @@ public class Rebarbaro implements CXPlayer {
 
 
 	public int evaluationFunction(CXBoard board) {
-		int myPieces = 0;
-		int myThrees = 0;
-		int myTwos = 0;
-		int myVerticalWins = 0;
 		CXCellState myPiece = first;
 		CXCell lastCell = board.getLastMove();
 		int row = lastCell.i;
 		int col = lastCell.j;
 
-		//for (int col = 0; col < N; col++) {
-			//for (int row = 0; row < M; row++) {
-				if (board.cellState(row, col) == myPiece) {
-					//System.err.print("\nmyPiece " + row + " " + col);
-					myPieces++;
-					if (isVerticalWin(board, col, row, myPiece)) {
-						myVerticalWins++;
-					}
-					else if (isHorizontalWin(board, col, row, myPiece) || isDiagonalWin(board, col, row, myPiece)) {
-						myThrees++;
-					} else if (isTwoInARow(board, col, row, myPiece)) {
-						myTwos++;
-					}
-				}
-					//System.err.print("\nempty " + row + " " + col);
-				//}
-			//}
+		int verticalPiece = nearPieces(row, col, board, lastCell.state, K, 1);
+		int orizzontalPiece = nearPieces(row, col, board, lastCell.state, K, 2);
+		int diagonalPiece = nearPieces(row, col, board, lastCell.state, K, 3);
+		int antiDiagonalPiece = nearPieces(row, col, board, lastCell.state, K, 4);
 		
-
-		int score = (myThrees * 5) + (myTwos * 3) + (2* myVerticalWins);
+		int score = verticalPiece + orizzontalPiece + diagonalPiece + antiDiagonalPiece;
 		return score;
 	}
 
@@ -435,6 +418,60 @@ public class Rebarbaro implements CXPlayer {
 		return false;
 	}
 
+	public int nearPieces(int col, int row, CXBoard board, CXCellState player, int n, int direction) {
+    int count = 0;
+    int deltaRow = 0;
+    int deltaCol = 0;
+
+    switch (direction) {
+        case 1: // verticale
+            deltaRow = 1;
+            break;
+        case 2: // orizzontale
+            deltaCol = 1;
+            break;
+        case 3: // diagonale
+            deltaRow = 1;
+            deltaCol = 1;
+            break;
+        case 4: // diagonale inversa
+            deltaRow = -1;
+            deltaCol = 1;
+            break;
+        default:
+            break;
+    }
+
+    int currentRow = row + deltaRow;
+    int currentCol = col + deltaCol;
+
+    while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
+        if (board.cellState(currentRow, currentCol) == player) {
+            count++;
+        } else {
+            break;
+        }
+        currentRow += deltaRow;
+        currentCol += deltaCol;
+    }
+
+	if(direction == 3 || direction == 4){
+		//caso diagonale speculare
+		deltaRow = -deltaRow;
+		deltaCol = -deltaCol;
+			while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
+			if (board.cellState(currentRow, currentCol) == player) {
+				count++;
+			} else {
+				break;
+			}
+			currentRow += deltaRow;
+			currentCol += deltaCol;
+		}
+    }
+
+    return count;
+}
 
 
 	public void calculateComboFreeEnds(CXBoard B, Combo combo) {
