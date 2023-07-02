@@ -29,13 +29,11 @@ public class Rebarbaro implements CXPlayer {
 	private int M, N, K;
 	CXCellState first;
 	private boolean debugMode;
-	private HashMap<String, Float> transpositionTable = new HashMap<String, Float>();
+	private HashMap<Long, Float> transpositionTable = new HashMap<Long, Float>();
 
 	//private List<Combo> combinations;
 
 	private int DECISIONTREEDEPTH;
-
-
 
 
     /*Default empty constructor*/
@@ -71,10 +69,10 @@ public class Rebarbaro implements CXPlayer {
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 
 		float[] column_scores = new float[N];    //DEBUG debugMode     (la dichiarazione dentro l'if non va bene)
+		transpositionTable.clear();
 
 		for (int col : L) {
 			try{
-				transpositionTable.clear();
 
 				if(debugMode){
 					System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
@@ -96,13 +94,14 @@ public class Rebarbaro implements CXPlayer {
 					column_scores[col] = score;
 				}
 
-				if(System.currentTimeMillis() - START > TIMEOUT * 9700) { //se ho superato il timeout
+				if(System.currentTimeMillis() - START > (TIMEOUT * 9700)) { //se ho superato il timeout
 					throw new TimeoutException(); //lancio un'eccezione
 				}
 			} catch(TimeoutException e) {
 				System.err.println("Timeout!!! minimax ritorna -1 in selectColumn"); //debug
 				break;
 			}
+			//System.err.println();
 			
 		}
 
@@ -125,7 +124,7 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 		
-		//addHash(B, null);
+		//System.err.println("L1 " + (System.currentTimeMillis() - START)); //debug
 		return bestCol; //ritorno la colonna migliore
 	}
 
@@ -135,6 +134,7 @@ public class Rebarbaro implements CXPlayer {
 	public float minimax(CXBoard B, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer) {
 		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 		CXGameState state = B.markColumn(firstMove); //marco la prima mossa
+		float score = 0;
 
 		if(debugMode){
 			System.err.print("\n");
@@ -142,58 +142,32 @@ public class Rebarbaro implements CXPlayer {
 			System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); //debug
 			System.err.print("col: " + firstMove + "\t\t" ); //debug
 		}
-		
-		if (state == myWin) { //se ho vinto
-			//int eval = evaluationFunction(B);
-			if(debugMode) {
-				System.err.print("|won | evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
-			}
+
+		if(depth == 0 || state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
+			score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
 			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? -(K*4)*depth : (K*4)*depth; //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
-		}
-		else if (state == yourWin) { //se ha vinto l'avversario
-			//int eval = evaluationFunction(B);
-			if(debugMode) {
-				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
-			}
-			B.unmarkColumn(); //tolgo la mossa
-			return maximizingPlayer ? -(K*4)*depth : (K*4)*depth; //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
-		}
-		else if(depth == 0 && state != CXGameState.OPEN){ //se sono arrivato alla profondita' massima o se ho pareggiato
-			//B.unmarkColumn(); //tolgo la mossa
-			//return evaluationFunction(B);
-			int score = maximizingPlayer ? -evaluationFunction(B)*depth : evaluationFunction(B)*depth;
-			//System.err.print("evaluate: " + score);
-			B.unmarkColumn(); //tolgo la mossa
+			//System.err.println("Score: " + score);
 			return score;
 			//return 0;
-			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; //ritorno 0
-	 	} else if(depth == 0 || state == CXGameState.DRAW){
-			B.unmarkColumn(); //tolgo la mossa
-			//return maximizingPlayer ? Integer.MIN_VALUE : Integer.MAX_VALUE; 
-			return 0;
 		}
 
+		long key = getKey(B); //chiave per la transposition table
+		if(transpositionTable.containsKey(key)){
+			score = transpositionTable.get(key);
+			return score;
+		} 
+		
+		
 
 		L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
 
 		if (maximizingPlayer) { 
 			// Maximize player 1's score
-			float maxScore = Integer.MIN_VALUE;
+			float maxScore = Float.NEGATIVE_INFINITY;
 			for (int col : L) {
-				
-				/*
-				if(transpositionTable.containsKey(B)){
-					float score = transpositionTable.get(B);
-					B.unmarkColumn();
-					return score;
-				}
-				*/
-
-				float score = minimax(B, depth - 1, col, alpha, beta, false);
-
+				//System.err.println("col: " + col + " " + depth + " " + key + " " + transpositionTable.get(key));
+				score = minimax(B, depth - 1, col, alpha, beta, false);
 				if(debugMode){System.err.print("evaluate: " + score + " ");}
-				
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
 				if (beta <= alpha) {
@@ -202,23 +176,23 @@ public class Rebarbaro implements CXPlayer {
 				}
 				
 			}
+			transpositionTable.put(key, score);
 			B.unmarkColumn();
 			return maxScore;
 			
 		} else {
 			// Minimize player 2's score
-			float minScore = Integer.MAX_VALUE;
+			float minScore = Float.POSITIVE_INFINITY;
 			for (int col : L) {
-				
-				
-				float score = minimax(B, depth - 1, col, alpha, beta, true);
+				score = minimax(B, depth - 1, col, alpha, beta, true);
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
 					// Alpha cutoff
 					break;
-					}
+				}
 			}
+			transpositionTable.put(key, score);
 			B.unmarkColumn();
 			return minScore;
 		}
@@ -227,7 +201,6 @@ public class Rebarbaro implements CXPlayer {
 
 
 	public int evaluationFunction(CXBoard board) {
-		CXCellState myPiece = first;
 		CXCell lastCell = board.getLastMove();
 		int row = lastCell.i;
 		int col = lastCell.j;
@@ -238,10 +211,84 @@ public class Rebarbaro implements CXPlayer {
 		int antiDiagonalPieces = nearPieces(row, col, board, lastCell.state, K, 4);
 		
 		int score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
+		//score *= columns_value[col];
+
+		if(board.gameState() == CXGameState.WINP1 || board.gameState() == CXGameState.WINP2){
+			score *= 20;
+		}
+		else if(board.gameState() == CXGameState.DRAW){
+			score *= 2;
+		}
 		return score;
 	}
 
+	public int nearPieces(int col, int row, CXBoard board, CXCellState player, int n, int direction) {
+    int count = 0;
+    int deltaRow = 0;
+    int deltaCol = 0;
+	int multiplier = 2;
 
+    switch (direction) {
+        case 1: // verticale
+            deltaRow = 1;
+            break;
+        case 2: // orizzontale
+            deltaCol = 1;
+            break;
+        case 3: // diagonale
+            deltaRow = 1;
+            deltaCol = 1;
+            break;
+        case 4: // diagonale inversa
+            deltaRow = -1;
+            deltaCol = 1;
+            break;
+        default:
+            break;
+    }
+
+    int currentRow = row + deltaRow;
+    int currentCol = col + deltaCol;
+
+    while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
+        if (board.cellState(currentRow, currentCol) == player) {
+            count += multiplier;
+        } else {
+            if(multiplier > 0) multiplier--;
+			else break;
+        }
+        currentRow += deltaRow;
+        currentCol += deltaCol;
+    }
+
+	if(direction == 3 || direction == 4 || direction == 2){
+		//caso mosse opposte
+		deltaRow = -deltaCol;
+		deltaCol = -deltaCol;
+		currentRow = row + deltaCol;
+		currentCol = col + deltaCol;
+		while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
+			if (board.cellState(currentRow, currentCol) == player) {
+				count++;
+			} else {
+				if(multiplier > 0) multiplier--;
+				else break;
+			}
+			currentRow += deltaRow;
+			currentCol += deltaCol;
+		}
+    }
+    return count;
+	}
+ 
+
+	public double[] calculate_columns_value(int boardWidth){
+		double[] columns_value = new double[boardWidth];
+		for(float i = 0; i < boardWidth; i++){
+			columns_value[(int)i] =  i < boardWidth/2 ? ( 1 + (i + 1)/(boardWidth/2) ) / 2 : ( 1 + (boardWidth - i)/(boardWidth/2) ) / 2;
+		}
+		return columns_value;
+	}
 
 
 	private void checktime() throws TimeoutException {
@@ -313,172 +360,7 @@ public class Rebarbaro implements CXPlayer {
 	}
 
 
-	public double[] calculate_columns_value(int boardWidth){
-		double[] columns_value = new double[boardWidth];
-		for(float i = 0; i < boardWidth; i++){
-			columns_value[(int)i] =  i < boardWidth/2 ? ( 1 + (i + 1)/(boardWidth/2) ) / 2 : ( 1 + (boardWidth - i)/(boardWidth/2) ) / 2;
-		}
-		return columns_value;
-	}
 
-
-	public boolean isVerticalWin(CXBoard B, int col, int row, CXCellState piece){
-		//System.err.print("verticale\t"+ col + "\t" + row + "\t" + piece + "\t");
-		int count = 1;
-		int i = row + 1;
-		while(i < M){
-			if(B.cellState(i, col) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i++;
-		}
-		i = row - 1;
-		while(i >= 0){
-			if(B.cellState(i, col) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i--;
-		}
-		//System.err.print("\n");
-		return count >= K;
-	}
-
-
-	public boolean isDiagonalWin(CXBoard B, int col, int row, CXCellState piece){
-		//System.err.print("diagonale\t");
-		int count = 1;
-		int i = row + 1;
-		int j = col + 1;
-		while(i < M && j < N){
-			if(B.cellState(i, j) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i++;
-			j++;
-		}
-		i = row - 1;
-		j = col - 1;
-		while(i >= 0 && j >= 0){
-			if(B.cellState(i, j) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i--;
-			j--;
-		}
-		//System.err.print("\n");
-		return count >= K;
-	}
-
-
-	public boolean isHorizontalWin(CXBoard B, int col, int row, CXCellState piece){
-		//System.err.print("orizzontale\t");
-		int count = 1;
-		int i = col + 1;
-		while(i < N){
-			if(B.cellState(row, i) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i++;
-		}
-		i = col - 1;
-		while(i >= 0){
-			if(B.cellState(row, i) == piece){
-				count++;
-			}
-			else{
-				break;
-			}
-			i--;
-		}
-		//System.err.print("\n");
-		return count >= K;
-	}
-	
-
-	public boolean isTwoInARow(CXBoard B, int col, int row, CXCellState piece){
-		//System.err.print("due in linea\t");
-		if(row + 1 < M && B.cellState(row, col) == piece){
-			return true;
-		} else if(row - 1 >= 0 && B.cellState(row, col) == piece){
-			return true;
-		} else if(col + 1 < N && B.cellState(row, col) == piece){
-			return true;
-		} else if(col - 1 < 0 && B.cellState(row, col) == piece){
-			return true;
-		}
-			
-		return false;
-	}
-
-	public int nearPieces(int col, int row, CXBoard board, CXCellState player, int n, int direction) {
-    int count = 0;
-    int deltaRow = 0;
-    int deltaCol = 0;
-
-    switch (direction) {
-        case 1: // verticale
-            deltaRow = 1;
-            break;
-        case 2: // orizzontale
-            deltaCol = 1;
-            break;
-        case 3: // diagonale
-            deltaRow = 1;
-            deltaCol = 1;
-            break;
-        case 4: // diagonale inversa
-            deltaRow = -1;
-            deltaCol = 1;
-            break;
-        default:
-            break;
-    }
-
-    int currentRow = row + deltaRow;
-    int currentCol = col + deltaCol;
-
-    while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
-        if (board.cellState(currentRow, currentCol) == player) {
-            count++;
-        } else {
-            break;
-        }
-        currentRow += deltaRow;
-        currentCol += deltaCol;
-    }
-
-	if(direction == 3 || direction == 4){
-		//caso diagonale speculare
-		deltaRow = -deltaRow;
-		deltaCol = -deltaCol;
-			while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
-			if (board.cellState(currentRow, currentCol) == player) {
-				count++;
-			} else {
-				break;
-			}
-			currentRow += deltaRow;
-			currentCol += deltaCol;
-		}
-    }
-
-    return count;
-}
 
 
 	public void calculateComboFreeEnds(CXBoard B, Combo combo) {
@@ -518,34 +400,98 @@ public class Rebarbaro implements CXPlayer {
 		}
 	}
 
-
-	public void addHash(CXBoard B, Float value){
-		String board = "";
-		CXCell[] L = B.getMarkedCells(); 
-		for(CXCell i : L){
-			board += i.i;
-			board += i.j;
+	public long getKey(CXBoard board) {
+		byte[] hash = new byte[board.numOfMarkedCells() * 2];
+		int index = 0;
+		for (CXCell cell : board.getMarkedCells()) {
+			hash[index++] = (byte) cell.i;
+			hash[index++] = (byte) cell.j;
 		}
-		try{
-			board = hash(board);
-			transpositionTable.put(board, value);
-			System.err.println(board);
-		} catch(Exception e){
-			System.err.println("Errore nell'aggiunta della board alla transposition table");
-		}
+		long key = fnv1aHash(hash);
+		return key;
 	}
 
-
-	public String hash(String input) throws Exception {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-        BigInteger number = new BigInteger(1, hash);
-        StringBuilder hexString = new StringBuilder(number.toString(16));
-        while (hexString.length() < 32) {
-            hexString.insert(0, '0');
-        }
-        return hexString.toString();
-    }
+	public long fnv1aHash(byte[] data) {
+		final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
+		final long FNV_PRIME = 0x100000001b3L;
+		long hash = FNV_OFFSET_BASIS;
+		for (byte b : data) {
+			hash ^= b;
+			hash *= FNV_PRIME;
+		}
+		return hash;
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+		/*
+		if (state == myWin) { //se ho vinto
+			//int eval = evaluationFunction(B);
+			if(debugMode) {
+				System.err.print("|won | evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
+			}
+			B.unmarkColumn(); //tolgo la mossa
+			//System.err.println("Score: " + K*1000);
+			return maximizingPlayer ? -(K*1000) : (K*1000); //ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+		}
+		else if (state == yourWin) { //se ha vinto l'avversario
+			//int eval = evaluationFunction(B);
+			if(debugMode) {
+				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1*depth : 1*depth) + " ");
+			}
+			B.unmarkColumn(); //tolgo la mossa
+			return maximizingPlayer ? -(K*1000) : (K*1000); //ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+		}
+		else if(depth == 0 || state == CXGameState.DRAW){ //se sono arrivato alla profondita' massima o se ho pareggiato
+			score = maximizingPlayer ? -evaluationFunction(B) : evaluationFunction(B);
+			B.unmarkColumn(); //tolgo la mossa
+			//System.err.println("Score: " + score);
+			return score;
+			//return 0;
+		}
+		
+	public int evaluationFunction(CXBoard board) {
+		CXCell lastCell = board.getLastMove();
+		int row = lastCell.i;
+		int col = lastCell.j;
+
+		int verticalPieces = nearPieces(row, col, board, lastCell.state, K, 1);
+		int orizzontalPieces = nearPieces(row, col, board, lastCell.state, K, 2);
+		int diagonalPieces = nearPieces(row, col, board, lastCell.state, K, 3);
+		int antiDiagonalPieces = nearPieces(row, col, board, lastCell.state, K, 4);
+		
+		int score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
+		score *= columns_value[col];
+
+		if(board.gameState() == CXGameState.WINP1 || board.gameState() == CXGameState.WINP2){
+			score *= 10;
+		}
+		return score;
+	}
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		*/
 
 

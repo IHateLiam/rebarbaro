@@ -68,7 +68,7 @@ public class RebarbaroL0 implements CXPlayer {
 
 		for (int col : L) {
 			try{
-
+				
 				if(debugMode){
 					System.err.print("\n marked column: " + B.numOfMarkedCells()); //debug
 					System.err.println("\n\n"); //debug
@@ -118,7 +118,7 @@ public class RebarbaroL0 implements CXPlayer {
 			}
 		}
 
-		
+		//System.err.println("L0 " + (System.currentTimeMillis() - START)); //debug
 		return bestCol; //ritorno la colonna migliore
 	}
 
