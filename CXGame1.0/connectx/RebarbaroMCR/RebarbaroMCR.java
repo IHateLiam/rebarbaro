@@ -2,17 +2,20 @@ package connectx.RebarbaroMCR;
 
 
 import connectx.CXPlayer;
+import connectx.Rebarbaro.Mongolfiera;
 import connectx.CXBoard;
 import connectx.CXGameState;
 import connectx.CXCell;
 import connectx.CXCellState;
 
+import java.util.Collections;
 import java.util.TreeSet;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
 
 import org.w3c.dom.Node;
 
@@ -28,17 +31,16 @@ public class RebarbaroMCR implements CXPlayer {
 	CXCellState first;
 	private boolean debugMode;
 
+		
 	//private List<Combo> combinations;
-
 	private int DECISIONTREEDEPTH;
-
-
-
 
     /*Default empty constructor*/
     public RebarbaroMCR() {
 
     }
+
+
 
 
     public void initPlayer(int M, int N, int K, boolean first, int timeout_in_secs) {
@@ -60,8 +62,8 @@ public class RebarbaroMCR implements CXPlayer {
     }
 
 
-    private static final int DECISION_TREE_DEPTH = 15;
-    private static final int SIMULATION_COUNT = 500;
+    private static final int DECISION_TREE_DEPTH = 10;
+    private static final int SIMULATION_COUNT = 100;
 
     public int selectColumn(CXBoard board) {
         long startTime = System.currentTimeMillis();
@@ -69,6 +71,8 @@ public class RebarbaroMCR implements CXPlayer {
 		Node root = new Node((CXBoard) board.copy(), -1);
         for (int i = 0; i < availableColumns.length; i++) {
 			try {
+				//long endTime = System.currentTimeMillis();
+				//System.out.println("Time taken: " + (endTime - startTime) + "ms");
 				Node child = root.getChild(availableColumns[i]);
 				child.getBoard().markColumn(availableColumns[i]);  // Esegui la mossa sulla scheda del nodo figlio
 				for (int j = 0; j < SIMULATION_COUNT; j++) {
@@ -101,52 +105,45 @@ public class RebarbaroMCR implements CXPlayer {
    
 		// Crea una copia della board del nodo
 		CXBoard board = (CXBoard) node.getBoard().copy();
-
 		// Ottieni il giocatore corrente dal nodo
 		int currentPlayer = node.getCurrentPlayer();
-
 		// Ottieni le colonne disponibili sulla board
 		Integer[] availableColumns = board.getAvailableColumns();
-
 		// Crea un oggetto Random per selezionare mosse casuali
 		Random random = new Random();
-		
 		int depth = 0;
+
 		// Continua a giocare finché la partita non è finita
 		while (board.gameState() == CXGameState.OPEN && depth < DECISION_TREE_DEPTH ) {
 			// Seleziona una colonna casuale tra quelle disponibili
 			int column = availableColumns[random.nextInt(availableColumns.length)];
-
 			// Esegui la mossa sulla board
 			board.markColumn(column);
-
 			// Cambia il giocatore corrente
 			currentPlayer = (currentPlayer + 1) % 2;
-
 			// Aggiorna le colonne disponibili
 			availableColumns = board.getAvailableColumns();
 		}
 
 		// Aggiorna il nodo con lo stato finale della partita
-		//node.scoreUpdate(evaluationFunction(board));
 		node.update(board.gameState());
 	}
 
 
-private int selectMove(CXBoard board, int currentPlayer) {
-    Integer[] availableColumns = board.getAvailableColumns();
-    int bestColumn = availableColumns[0];
-    float bestScore = Float.NEGATIVE_INFINITY;
-    for (int i = 0; i < availableColumns.length; i++) {
-        int column = availableColumns[i];
-        float score = evaluationFunction(board);
-        if (score > bestScore) {
-            bestScore = score;
-            bestColumn = column;
-        }
-    }
-    return bestColumn;
-}
+	private int selectMove(CXBoard board, int currentPlayer) {
+		Integer[] availableColumns = board.getAvailableColumns();
+		int bestColumn = availableColumns[0];
+		float bestScore = Float.NEGATIVE_INFINITY;
+		for (int i = 0; i < availableColumns.length; i++) {
+			int column = availableColumns[i];
+			float score = evaluationFunction(board);
+			if (score > bestScore) {
+				bestScore = score;
+				bestColumn = column;
+			}
+		}
+		return bestColumn;
+	}
 
     private class Node {
         private CXBoard board;
@@ -201,15 +198,14 @@ private int selectMove(CXBoard board, int currentPlayer) {
         public void update(CXGameState gameState) {
             visitCount++;
             if (gameState == CXGameState.WINP1) {
-                winCount += currentPlayer == 0 ? 1 : 0;
+                winCount += myWin == CXGameState.WINP1 ? 1 : -2;
             } else if (gameState == CXGameState.WINP2) {
-                winCount += currentPlayer == 1 ? 1 : 0;
-            } else if(gameState == CXGameState.DRAW) {
-                winCount += 0.5;
+                winCount += myWin == CXGameState.WINP2 ? 1 : -2;
             }
-			//else
-				//winCount += evaluationFunction(this.board);
+			else
+				winCount += evaluationFunction(this.board)/100;
         }
+
 
 		public void scoreUpdate(int score) {
 			this.nodeScore = score;
@@ -221,7 +217,7 @@ private int selectMove(CXBoard board, int currentPlayer) {
 	//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
 
 
-public int evaluationFunction(CXBoard board) {
+	public float evaluationFunction(CXBoard board) {
 		CXCell lastCell = board.getLastMove();
 		int row = lastCell.i;
 		int col = lastCell.j;
@@ -231,66 +227,50 @@ public int evaluationFunction(CXBoard board) {
 		int diagonalPieces = nearPieces(row, col, board, lastCell.state, K, 3);
 		int antiDiagonalPieces = nearPieces(row, col, board, lastCell.state, K, 4);
 		
-		int score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
+		float score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
 		//score *= columns_value[col];
 
-		if(board.gameState() == CXGameState.WINP1 || board.gameState() == CXGameState.WINP2){
-			score *= 20;
+		if(board.gameState() == CXGameState.DRAW){
+			score *= 1;
+		} else if(board.gameState() == CXGameState.WINP1 || board.gameState() == CXGameState.WINP2){
+			score *= K*4;
 		}
-		else if(board.gameState() == CXGameState.DRAW){
-			score *= 2;
-		}
+		score /= board.numOfMarkedCells();
+
 		return score;
 	}
 
 	public int nearPieces(int col, int row, CXBoard board, CXCellState player, int n, int direction) {
-    int count = 0;
-    int deltaRow = 0;
-    int deltaCol = 0;
-	int multiplier = 2;
+		int count = 0;
+		int deltaRow = 0;
+		int deltaCol = 0;
+		int multiplier = 2;
 
-    switch (direction) {
-        case 1: // verticale
-            deltaRow = 1;
-            break;
-        case 2: // orizzontale
-            deltaCol = 1;
-            break;
-        case 3: // diagonale
-            deltaRow = 1;
-            deltaCol = 1;
-            break;
-        case 4: // diagonale inversa
-            deltaRow = -1;
-            deltaCol = 1;
-            break;
-        default:
-            break;
-    }
+		switch (direction) {
+			case 1: // verticale
+				deltaRow = 1;
+				break;
+			case 2: // orizzontale
+				deltaCol = 1;
+				break;
+			case 3: // diagonale
+				deltaRow = 1;
+				deltaCol = 1;
+				break;
+			case 4: // diagonale inversa
+				deltaRow = -1;
+				deltaCol = 1;
+				break;
+			default:
+				break;
+		}
 
-    int currentRow = row + deltaRow;
-    int currentCol = col + deltaCol;
+		int currentRow = row + deltaRow;
+		int currentCol = col + deltaCol;
 
-    while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
-        if (board.cellState(currentRow, currentCol) == player) {
-            count += multiplier;
-        } else {
-            if(multiplier > 0) multiplier--;
-			else break;
-        }
-        currentRow += deltaRow;
-        currentCol += deltaCol;
-    }
-
-	if(direction == 3 || direction == 4 || direction == 2){
-		//caso mosse opposte
-		deltaRow = -deltaCol;
-		deltaCol = -deltaCol;
-		currentRow = row + deltaCol;
-		currentCol = col + deltaCol;
 		while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
 			if (board.cellState(currentRow, currentCol) == player) {
-				count++;
+				count += multiplier;
 			} else {
 				if(multiplier > 0) multiplier--;
 				else break;
@@ -298,8 +278,25 @@ public int evaluationFunction(CXBoard board) {
 			currentRow += deltaRow;
 			currentCol += deltaCol;
 		}
-    }
-    return count;
+
+		if(direction == 3 || direction == 4 || direction == 2){
+			//caso mosse opposte
+			deltaRow = -deltaCol;
+			deltaCol = -deltaCol;
+			currentRow = row + deltaCol;
+			currentCol = col + deltaCol;
+			while (currentRow >= 0 && currentRow < M && currentCol >= 0 && currentCol < N && count < n) {
+				if (board.cellState(currentRow, currentCol) == player) {
+					count++;
+				} else {
+					if(multiplier > 0) multiplier--;
+					else break;
+				}
+				currentRow += deltaRow;
+				currentCol += deltaCol;
+			}
+		}
+	return count;
 	}
 
 	
