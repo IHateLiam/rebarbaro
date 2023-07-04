@@ -4,6 +4,7 @@ import connectx.CXBoard;
 import connectx.CXCell;
 import connectx.CXGameState;
 import connectx.CXCellState;
+
 import java.util.HashMap;
 import java.util.Random;
 import java.util.List;
@@ -28,25 +29,30 @@ import java.util.Comparator;
 
 public class IncantesimoClonazione {
     private HashMap<Long, Mongolfiera> map;
-    private static final int BOARD_SIZE = 6;
-    private static final long[][] ZOBRIST_TABLE = new long[BOARD_SIZE][BOARD_SIZE];
+    private int BOARD_COL_SIZE;
+    private int BOARD_ROW_SIZE;
+    private long[][] ZOBRIST_TABLE;
     private static final long EMPTY_BOARD_HASH = 0L;
     private Long[] firstChildren; 
 
     static {
-        Random random = new Random();
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                ZOBRIST_TABLE[i][j] = random.nextLong();
-            }
-        }
+        
     }
 
     /**
      * Costruttore
      */
-    public IncantesimoClonazione() {
+    public IncantesimoClonazione(int M, int N) {
         map = new HashMap<Long, Mongolfiera>();
+        BOARD_ROW_SIZE = M;
+        BOARD_COL_SIZE = N;
+        ZOBRIST_TABLE = new long[BOARD_ROW_SIZE][BOARD_COL_SIZE];
+        Random random = new Random();
+        for (int i = 0; i < BOARD_ROW_SIZE; i++) {
+            for (int j = 0; j < BOARD_COL_SIZE; j++) {
+                ZOBRIST_TABLE[i][j] = random.nextLong();
+            }
+        }
     }
 
     public void addBoard(CXBoard board, Mongolfiera mongolfiera) {
@@ -61,6 +67,9 @@ public class IncantesimoClonazione {
      */
     public Mongolfiera getMongolfiera(CXBoard board) {
         long hash = getBoardHash(board);
+        if(!map.containsKey(hash)){
+            return null;
+        }
         return map.get(hash);
     }
 
@@ -70,7 +79,7 @@ public class IncantesimoClonazione {
      * @param board
      * @return hash
      */
-    public static long getBoardHash(CXBoard board) {
+    public long getBoardHash(CXBoard board) {
         long hash = EMPTY_BOARD_HASH;
         CXCell[] markedCells = board.getMarkedCells();
         /*
@@ -138,7 +147,7 @@ public class IncantesimoClonazione {
      * 
      * @return maxValue
      */
-    public float getChildrenScore(CXBoard board, List L, boolean maximizingPlayer,int roundMarkedCell){
+    public float getChildrenScore(CXBoard board, List<Mongolfiera> L, boolean maximizingPlayer,int roundMarkedCell){
         float maxScore = maximizingPlayer ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
         float score;
         Integer[] availableColumns = board.getAvailableColumns();
@@ -148,7 +157,7 @@ public class IncantesimoClonazione {
             long key = getKey(board);
             if(map.containsKey(key)){
                 mongolfiera = map.get(key);
-                if(map.get(key).markedCell == roundMarkedCell){
+                if(map.get(key).markedCells == roundMarkedCell){
                     score = mongolfiera.score;
                     if(maximizingPlayer)
                         maxScore = Math.max(score, maxScore);
@@ -157,9 +166,8 @@ public class IncantesimoClonazione {
                 }
                 else{
                     /**
-                     * Il warning di "Type Safety" che stai vedendo è un avviso comune quando si lavora con le collezioni
-                     * in Java. Questo perché Java non può garantire a tempo di compilazione che tutti gli elementi
-                     * nella tua lista siano del tipo specificato (in questo caso, Mongolfiera).
+                     * Inserisco una mongolfiera nella lista
+                     * e la ordino in base al suo score
                      */
                     L.add(mongolfiera);
                     Collections.sort(L, new Comparator<Mongolfiera>() {
@@ -180,7 +188,7 @@ public class IncantesimoClonazione {
      * Rimuove tutti i figli di primo livello ad eccezione di quello
      * relativo alla mossa scelta
      * @param board
-     * @param col
+     * @param col colonna scelta per la mossa successiva (quella da tenere)
      */
     public void deleteChildren(CXBoard board, int col){
        List<Integer> availableColumns = new ArrayList<>(Arrays.asList(board.getAvailableColumns()));
@@ -193,5 +201,18 @@ public class IncantesimoClonazione {
        }
     }
 
+    /**
+     * Crea una nuova Mongolfiera
+     * @param board
+     * @param col
+     * @param score
+     * @param roundMarkedCell
+     * @param maximizingPlayer
+     * @return
+     */
+    public Mongolfiera createMongolfiera(CXBoard board, int col, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove){
+        Mongolfiera mongolfiera = new Mongolfiera(board, score, col, maximizingPlayer, startingMove);
+        return mongolfiera;
+    }
 
 }

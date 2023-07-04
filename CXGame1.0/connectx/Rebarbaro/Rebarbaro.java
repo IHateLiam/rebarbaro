@@ -31,14 +31,15 @@ public class Rebarbaro implements CXPlayer {
 	private int M, N, K;
 	CXCellState first;
 	private boolean debugMode;
-	private HashMap<Long, Float> transpositionTable = new HashMap<Long, Float>();
+	private HashMap<Long, Float> transpositionTable2 = new HashMap<Long, Float>();
 	private int timeForColumn;
 	private boolean treeView = false;
+	private CXCell lastMove;
 
 	//private List<Combo> combinations;
 
 	private int DECISIONTREEDEPTH;
-
+	private IncantesimoClonazione transpositionTable;
 
     /*Default empty constructor*/
     public Rebarbaro() {
@@ -63,24 +64,27 @@ public class Rebarbaro implements CXPlayer {
 
 		//scelta di un valore basso visto che viene modificato dinamicamente
 		this.DECISIONTREEDEPTH = 2;	
-
+		this.transpositionTable = new IncantesimoClonazione(M, N);
 		debugMode = false;
     }
-
-	List<Mongolfiera> list = new ArrayList<Mongolfiera>(); // La lista di oggetti mongolfiera da ordinare
-	//Collections.sort(list, Comparator.comparingFloat(m -> m.score));
-
 
 
 	public int selectColumn(CXBoard B) {
 		START = System.currentTimeMillis(); //per il timeout
+
+		//per il minmax
 		float bestScore = Integer.MIN_VALUE; //per il minimax
 		int bestCol = -1; //per il minimax
-		int depth;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
-		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
 		float score = 0; //per il minimax
+		lastMove = B.getLastMove(); //per il minimax
+
+		//per il ciclo for
+		int depth;  //depth nei parametri di selectColumn non va bene perchE' java a quanto pare vuole che i parametri siano gli stessi di CXPlayer.selectColumn(..)
+		List<Integer> L = new ArrayList<>(Arrays.asList(B.getAvailableColumns())); //lista delle colonne disponibili
 		float[] column_scores = new float[N];    //DEBUG debugMode     (la dichiarazione dentro l'if non va bene)
-		transpositionTable.clear();
+
+		score = organizeColumns(L, B, true);
+		//TODO aggiungere la verifica dei value per creare una lista ordinata in base agli score
 		for (int col : L) {
 			try{
 				depth = DECISIONTREEDEPTH;
@@ -107,7 +111,7 @@ public class Rebarbaro implements CXPlayer {
 				}
 				
 
-				System.err.println(depth);
+				//System.err.println(depth);
 				if(debugMode) {
 					System.err.print("\nscore: " + score);
 					column_scores[col] = score;
@@ -127,7 +131,7 @@ public class Rebarbaro implements CXPlayer {
 		if(debugMode){System.err.print("\n bestCol: " + bestCol + " bestScore: " + bestScore);}
 		if (bestCol == -1) { //se non ho trovato nessuna mossa vincente
 			try { 
-				bestCol = singleMoveBlock(B, L); //provo a bloccare l'avversario
+				bestCol = singleMoveBlock(B, B.getAvailableColumns()); //provo a bloccare l'avversario
 			} catch(TimeoutException e) { //se non riesco
 				System.err.println("Timeout!!! singleMoveBlock ritorna -1 in selectColumn"); //debug
 			}
@@ -142,19 +146,30 @@ public class Rebarbaro implements CXPlayer {
 			}
 		}
 		
-		System.err.println("mossa scelta: " + bestCol); //debug
+		//System.err.println("mossa scelta: " + bestCol); //debug
+		//TODO aggiungere la rimozione dei figli di primo livello
+		if(B.gameState() != CXGameState.OPEN)
+				transpositionTable.deleteChildren(B, bestCol);
 		return bestCol; //ritorno la colonna migliore
 	}
 
 
 	//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
-
+	//TODO implementare l'utilizzo del incantesimo clonazione
 	public float minimax(CXBoard B, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer){
 		long startTime = System.currentTimeMillis(); //per il timeout
-		Integer[] L = B.getAvailableColumns(); //lista delle colonne disponibili
+		List<Integer> L = new ArrayList<>(Arrays.asList(B.getAvailableColumns())); //lista delle colonne disponibili
 		CXGameState state = B.markColumn(firstMove); //marco la prima mossa
 		float score = 0;
 		
+		Mongolfiera gameMove = transpositionTable.getMongolfiera(B);
+		
+		if(gameMove != null && gameMove.startingMove == lastMove){
+			B.unmarkColumn(); //tolgo la mossa
+			return gameMove.score;
+		}
+		
+
 		if(debugMode){
 			System.err.print("\n");
 			for (int i = DECISIONTREEDEPTH; i > depth; i--) { System.err.print("\t");}
@@ -177,17 +192,10 @@ public class Rebarbaro implements CXPlayer {
 			//return 0;
 		}
 
-		/*
-		long key = getKey(B); //chiave per la transposition table
-		if(transpositionTable.containsKey(key)){
-			score = transpositionTable.get(key);
-			return score;
-		} 
-		*/
-		
-		
-
-		L = B.getAvailableColumns(); //aggiorno la lista delle colonne disponibili
+		L = Arrays.asList(B.getAvailableColumns()); //aggiorno la lista delle colonne disponibili
+		if(gameMove != null){
+			score = organizeColumns(L, B, maximizingPlayer);
+		}
 
 		if (maximizingPlayer) { 
 			// Maximize player 1's score
@@ -198,11 +206,6 @@ public class Rebarbaro implements CXPlayer {
 				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
 					break;
 				}
-				score = minimax(B, depth - 1, col, alpha, beta, false);
-				if(treeView){
-					for(int i = depth; i < DECISIONTREEDEPTH; i++) { System.err.print("\t");}
-					System.err.println("evaluateM: " + score + " depth: " + depth + " beta: " + beta + " alpha: " + alpha);
-				}
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, maxScore);
 				if (beta <= alpha) {
@@ -210,9 +213,15 @@ public class Rebarbaro implements CXPlayer {
 					B.unmarkColumn();
 					return beta;
 				}
+				score = minimax(B, depth - 1, col, alpha, beta, false);
+				if(treeView){
+					for(int i = depth; i < DECISIONTREEDEPTH; i++) { System.err.print("\t");}
+					System.err.println("evaluateM: " + score + " depth: " + depth + " beta: " + beta + " alpha: " + alpha);
+				}
+				
 				
 			}
-			//transpositionTable.put(key, score);
+			transpositionTable.addBoard(B, gameMove);
 			B.unmarkColumn();
 			return maxScore;
 			
@@ -226,11 +235,6 @@ public class Rebarbaro implements CXPlayer {
 
 					break;
 				}
-				score = minimax(B, depth - 1, col, alpha, beta, true);
-				if(treeView){
-					for(int i = depth; i < DECISIONTREEDEPTH; i++) { System.err.print("\t");} //debug
-					System.err.println("evaluatem: " + score + " depth: " + depth + " beta: " + beta + " alpha:" + alpha);
-				}
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, minScore);
 				if (beta <= alpha) {
@@ -238,6 +242,12 @@ public class Rebarbaro implements CXPlayer {
 					B.unmarkColumn();
 					return alpha;
 				}
+				score = minimax(B, depth - 1, col, alpha, beta, true);
+				if(treeView){
+					for(int i = depth; i < DECISIONTREEDEPTH; i++) { System.err.print("\t");} //debug
+					System.err.println("evaluatem: " + score + " depth: " + depth + " beta: " + beta + " alpha:" + alpha);
+				}
+				
 			}
 			//transpositionTable.put(key, score);
 			B.unmarkColumn();
@@ -347,7 +357,11 @@ public class Rebarbaro implements CXPlayer {
 	return count;
 	}
  
-
+	/**
+	 * Calcolo il valore di ogni colonna in base alla distanza dal centro
+	 * @param boardWidth
+	 * @return array di double con i valori delle colonne
+	 */
 	public double[] calculate_columns_value(int boardWidth){
 		double[] columns_value = new double[boardWidth];
 		for(float i = 0; i < boardWidth; i++){
@@ -362,6 +376,26 @@ public class Rebarbaro implements CXPlayer {
 			throw new TimeoutException();
 	}
 
+	/**
+	* Verifico se sono già state valutate le colonne
+	* ed eventualmente le ordino in base al punteggio
+	* @param L lista delle colonne
+	* @param B stato attuale della board
+	* @return score più alto tra i figli
+	* implicitamente ordina la lista L in quanto passata per parametro
+	*/
+	public float organizeColumns(List<Integer> L, CXBoard board, boolean maximizingPlayer){
+		List<Mongolfiera> lastMoveChildren = new ArrayList<Mongolfiera>();
+		float score;
+		score = transpositionTable.getChildrenScore(board, lastMoveChildren, true, board.numOfMarkedCells());
+		if(lastMoveChildren.size() > 0){
+			for(Mongolfiera child : lastMoveChildren){
+				L.remove(child.column);
+				L.add(0, child.column);
+			}
+		}
+		return score;
+	}
 
 	/**
 	 * Check if we can win in a single move
