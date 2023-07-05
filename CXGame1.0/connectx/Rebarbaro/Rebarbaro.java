@@ -11,6 +11,7 @@ import java.util.TreeSet;
 import java.util.Random;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
 import java.util.HashMap;
@@ -31,7 +32,7 @@ public class Rebarbaro implements CXPlayer {
 	private boolean debugMode;
 	private HashMap<String, Float> transpositionTable = new HashMap<String, Float>();
 
-	//private List<Combo> combinations;
+	//private List<Combo> comboList;
 
 	private int DECISIONTREEDEPTH;
 
@@ -266,7 +267,7 @@ public class Rebarbaro implements CXPlayer {
 		int blockBonus = getBlockBonus(board, lastCell.state);
 		score += blockBonus;
 
-		//succoso
+		//                 succoso
 		// Aggiungi un bonus per le opportunita' di creare sequenze
 		int sequenceOpportunityBonus = getSequenceOpportunityBonus(board, lastCell.state);
 		score += sequenceOpportunityBonus;
@@ -690,6 +691,7 @@ public class Rebarbaro implements CXPlayer {
         return hexString.toString();
     }
 	*/
+	
 
 	public double[] calculate_columns_value(int boardWidth){
 		double[] columns_value = new double[boardWidth];
@@ -698,6 +700,217 @@ public class Rebarbaro implements CXPlayer {
 		}
 		return columns_value;
 	}
+
+	
+	//----------funzioni combo---------
+
+	public Combo createCombo(CXBoard B, CXCell cell, Direction direction) {
+		//PRECONDIZIONE:  cell DEVE contenere una pedina e il suo state deve essere == first
+		Combo newCombo = new Combo(first, direction);
+		int N_mie = 0;
+        int N_vuote = 0;
+        int N_interruzioni = 0;
+
+		CXCellState advCellState = first == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1;
+
+
+		int[] dir = {0, 0};
+
+		dir = direction.positiveDirection();
+		int xi = cell.i + dir[0];
+		int xj = cell.j + dir[1];
+		
+		
+		CXCell x = new CXCell(xi, xj, B.cellState(xi, xj));
+		CXCellState old_xCellState = x.state;
+
+		while(x.state != advCellState) {
+			newCombo.add(x);
+
+			if (x.state != old_xCellState) {
+				old_xCellState = x.state;
+				N_interruzioni++;
+			}
+			
+			if (x.state == first) {
+				N_mie++;
+			}
+
+			else if (x.state == CXCellState.FREE) {
+				N_vuote++;
+			}
+
+			xi = cell.i + dir[0];
+			xj = cell.j + dir[1];
+			x = new CXCell(xi, xj, B.cellState(xi, xj));
+		}
+
+		dir = direction.negativeDirection();
+
+		xi = cell.i + dir[0];
+		xj = cell.j + dir[1];
+
+		x = new CXCell(xi, xj, B.cellState(xi, xj));
+		old_xCellState = x.state;
+
+		while(x.state != advCellState) {
+			newCombo.add(x);
+
+			if (x.state != old_xCellState) {
+				old_xCellState = x.state;
+				N_interruzioni++;
+			}
+			
+			if (x.state == first) {
+				N_mie++;
+			}
+
+			else if (x.state == CXCellState.FREE) {
+				N_vuote++;
+			}
+
+			xi = cell.i + dir[0];
+			xj = cell.j + dir[1];
+			x = new CXCell(xi, xj, B.cellState(xi, xj));
+		}
+
+		
+		newCombo.N_mie = N_mie;
+		newCombo.N_vuote = N_vuote;
+		newCombo.N_interruzioni = N_interruzioni;
+		return newCombo;
+	}
+
+
+	public int sign(int number) {
+		if(number > 0) return +1;
+		else if(number == 0) return 0;
+		else return -1;
+	}
+
+	//due coordinate sono lungo la stessa retta di orientamento direzione
+	public boolean aligned(int i1, int j1, int i2, int j2, Direction direction) {
+		int i_r = i1 -i2;
+		int j_r = j1 - j2;
+		int[] dir = direction.positiveDirection();
+
+		if (sign(i_r) == sign(dir[0]) && sign(j_r) == sign(dir[1])) {
+			return true;
+		}
+		else {
+			dir = direction.negativeDirection();
+			if (sign(i_r) == sign(dir[0]) && sign(j_r) == sign(dir[1])) {
+				return true;
+			}
+
+			else return false;
+		}
+	}
+
+	//nel caso la combo non esista, ne ritorna una di lunghezza 0
+	public Combo findCombo(LinkedList<Combo> comboList, CXCell cell, Direction direction) {
+		for(Combo combo : comboList) {
+			if (combo.getDirection() == direction) {
+				if (aligned(cell.i, cell.j, combo.firstCell().i, combo.firstCell().i, direction)) {
+					for(CXCell comboCell : combo.getCells()) {
+						if (cell == comboCell) {
+							return combo;
+						}
+					}
+				} 
+			}
+		}
+
+		return new Combo();   //ha lista vuota e lunghezza 0, come se fosse un NULL
+	}
+
+	public LinkedList<Combo> refreshCombos(LinkedList<Combo> comboList, CXBoard B, CXCell cell, CXCellState myState, boolean lastMoveWasMine) {
+		//PRECONDIZIONE: cell.state DEVE essere == first 
+
+		Direction[] directions = {  Direction.Vertical,
+									Direction.Horizontal,
+									Direction.Diagonal, 
+									Direction.AntiDiagonal};
+		
+		//se l'ultima pedina messa e' la mia
+		if(lastMoveWasMine) {
+
+			for(Direction direction : directions) {
+				int[] dir_pos = direction.positiveDirection();
+				int[] dir_neg = direction.negativeDirection();
+				CXCellState advCellState = myState == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1;
+
+
+				
+				CXCell cell_p = new CXCell(cell.i + dir_pos[0], cell.j + dir_pos[1], B.cellState(cell.i + dir_pos[0], cell.j + dir_pos[1]));
+				CXCell cell_n = new CXCell(cell.i + dir_neg[0], cell.j + dir_neg[1], B.cellState(cell.i + dir_neg[0], cell.j + dir_neg[1]));
+
+				if(cell_p.state == cell_n.state && cell_n.state == advCellState) {
+					//praticamente ho messo una pedina in un posto isolato
+					comboList.add(createCombo(B, cell, direction));
+				}
+				else {
+					//tolgo e rimetto la combo, ossia la ricalcolo
+					comboList.remove(findCombo(comboList, cell, direction));
+					createCombo(B, cell, direction);
+				}
+			}
+
+		}
+
+		//se l'ultima messa e' dell'avversario
+		else {
+
+			for(Direction direction : directions) {
+				int[] dir_pos = direction.positiveDirection();
+				int[] dir_neg = direction.negativeDirection();
+				CXCellState advCellState = myState == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1;
+
+				
+				CXCell cell_p = new CXCell(cell.i + dir_pos[0], cell.j + dir_pos[1], B.cellState(cell.i + dir_pos[0], cell.j + dir_pos[1]));
+				CXCell cell_n = new CXCell(cell.i + dir_neg[0], cell.j + dir_neg[1], B.cellState(cell.i + dir_neg[0], cell.j + dir_neg[1]));
+
+				if(cell_p.state == cell_n.state && cell_n.state == advCellState) {
+					//non succede nulla 
+				}
+				else if(cell_p.state == cell_n.state && cell_n.state == myState) {
+					//cell_p e cell_n facevano sicuramente parte della stessa combo
+					//quindi la spezzo
+					comboList.remove(findCombo(comboList, cell_p, direction));
+					createCombo(B, cell_p, direction);
+					createCombo(B, cell_n, direction);
+				}
+				else if(cell_p.state != advCellState && cell_n.state == advCellState) {
+					//controllo che lungo la direzione positiva ci sia una mia pedina
+					while(cell_p.state != myState && 
+					cell_p.i >= 0 && cell_p.i < M && cell_p.j >= 0 && cell_p.j < N) {
+						cell_p = new CXCell(cell_p.i + dir_pos[0], cell_p.j + dir_pos[1], B.cellState(cell_p.i + dir_pos[0], cell_p.j + dir_pos[1]));
+					}
+					//se alla fine una mia pedina c'era
+					if(cell_p.state == myState) {
+						//tolgo e ricalcolo la combo
+						comboList.remove(findCombo(comboList, cell_p, direction));   
+						comboList.add(createCombo(B, cell_p, direction));
+					}
+				}
+				else if(cell_p.state == advCellState && cell_n.state != advCellState) {
+					//controllo che lungo la direzione positiva ci sia una mia pedina
+					while(cell_n.state != myState && 
+					cell_n.i >= 0 && cell_n.i < M && cell_n.j >= 0 && cell_n.j < N) {
+						cell_n = new CXCell(cell_n.i + dir_neg[0], cell_n.j + dir_neg[1], B.cellState(cell_n.i + dir_neg[0], cell_n.j + dir_neg[1]));
+					}
+					//se alla fine una mia pedina c'era
+					if(cell_n.state == myState) {
+						//tolgo e ricalcolo la combo
+						comboList.remove(findCombo(comboList, cell_n, direction));   
+						comboList.add(createCombo(B, cell_n, direction));
+					}
+				}
+			}
+		}
+
+
+		return comboList;
+	}
+
 }
-
-
