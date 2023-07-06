@@ -62,7 +62,7 @@ public class Rebarbaro implements CXPlayer {
 
 
 		// (---)   (---)   (---)   (---)   (---)   (---)   
-		debugMode = true;
+		debugMode = false;
 		// (---)   (---)   (---)   (---)   (---)   (---)   
     }
 
@@ -198,8 +198,10 @@ public class Rebarbaro implements CXPlayer {
 			else if(B.getMarkedCells().length > 0){
 				refreshCombos(rebarbaroCombos, B, B.getLastMove(), first, true);
 			}
-			System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); // debug
-			System.err.print("col: " + firstMove + "\t\t"); // debug
+			if(debugMode) {
+				System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); // debug
+				System.err.print("col: " + firstMove + "\t\t"); // debug
+			}
 		}
 
 		 
