@@ -27,6 +27,8 @@ public class Combo {
     private int length; // Lunghezza della combo
     private int freeEnds; // Numero di estremita' aperte della combo
 
+    private boolean deadCombo;   //se e' chiusa da entrambi i lati e non e' lunga abbastanza da vincere
+
     public Combo() {
         cellList = new LinkedList<CXCell>();
         length = 0;
@@ -136,6 +138,10 @@ public class Combo {
      */
     public int getValue() {
         return value;
+    }
+
+    public void setValue(int newValue) {
+        this.value = newValue;
     }
 
     /**
