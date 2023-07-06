@@ -20,14 +20,14 @@ public class Combo {
     private Direction direction; // Direzione della combo
     private int value; // Valore associato alla combo
 
-    public int N_mie; // Numero di pedine appartenenti al giocatore corrente nella combo
-    public int N_vuote; // Numero di caselle vuote nella combo
-    public int N_interruzioni; // Numero di interruzioni nella combo
+    protected int N_mie; // Numero di pedine appartenenti al giocatore corrente nella combo
+    protected int N_vuote; // Numero di caselle vuote nella combo
+    protected int N_interruzioni; // Numero di interruzioni nella combo
 
     private int length; // Lunghezza della combo
     private int freeEnds; // Numero di estremita' aperte della combo
 
-    private boolean deadCombo;   //se e' chiusa da entrambi i lati e non e' lunga abbastanza da vincere
+    protected boolean deadCombo;   //se e' chiusa da entrambi i lati e non e' lunga abbastanza da vincere
 
     public Combo() {
         cellList = new LinkedList<CXCell>();
@@ -37,6 +37,8 @@ public class Combo {
         this.N_mie = 0;
         this.N_vuote = 0;
         this.N_interruzioni = 0;
+
+        this.deadCombo = false;
     }
 
     /**
@@ -54,6 +56,8 @@ public class Combo {
         this.N_mie = 0;
         this.N_vuote = 0;
         this.N_interruzioni = 0;
+
+        this.deadCombo = false;
     }
 
     /**
@@ -93,12 +97,17 @@ public class Combo {
     }
     
     /**
-     * Aggiunge una nuova cella alla combo e incrementa la lunghezza della combo.
+     * Aggiunge (in fondo) una nuova cella alla combo e incrementa la lunghezza della combo.
      *
      * @param newCell la nuova cella da aggiungere alla combo
      */
     public void add(CXCell newCell) {
         cellList.add(newCell);
+        length++;
+    }
+
+    public void addFirst(CXCell newCell) {
+        cellList.addFirst(newCell);
         length++;
     }
 
@@ -175,13 +184,16 @@ public class Combo {
      * Calcola il numero di estremita' libere nella combo in base alla direzione.
      * Questo metodo dovrebbe essere chiamato dopo l'aggiunta o la rimozione di celle nella combo.
      */
-    public void calculateFreeEnds() {
-        if (this.direction == Direction.Vertical || this.direction == Direction.Horizontal) {
-            if (cellList.getLast().state == CXCellState.FREE) {
-                freeEnds++;
-            }
-        }
-        // In altre direzioni non ci sono estremita' libere
+    public int calculateFreeEnds(CXBoard B) {
+        int[] dir_p = this.direction.positiveDirection();
+        int[] dir_n = this.direction.negativeDirection();
+
+        CXCell firstCell = cellList.getFirst();
+        CXCell lastCell  = cellList.getLast();
+
+        int n_free_ends = 0;
+
+       return 0;
     }
 
     public CXCell firstCell() {
