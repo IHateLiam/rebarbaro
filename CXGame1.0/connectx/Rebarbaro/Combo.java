@@ -65,14 +65,17 @@ public class Combo {
      * il numero di caselle vuote e il numero di interruzioni nella combo.
      * 
      * @param value il valore iniziale a cui aggiungere il valore calcolato della combo
+     * @param X numero di pedine da mettere in file per vincere
      * @return il valore aggiornato della combo
      */
 
-    public int calculateComboValue(int value) {
+    public int calculateComboValue(int value, int X) {
         //int N_mie = 0;  // Contatore delle pedine del giocatore corrente
         //int N_vuote = 0;  // Contatore delle caselle vuote
         //int N_interruzioni = 0;  // Contatore delle interruzioni nella combo
-
+/*
+ * 
+ 
         int length_weight = 2;  // Peso per la lunghezza della combo
         int N_mie_weight = 5;  // Peso per il numero di pedine del giocatore corrente
         int N_vuote_weight = 1;  // Peso per il numero di caselle vuote
@@ -94,6 +97,65 @@ public class Combo {
         
         // Aggiorna il valore esterno "value" sommando il valore calcolato
         return value + calculatedValue;
+        */
+
+        if(this.deadCombo) {
+            //System.err.print(" DEBUG sono dentro calculateComboValue e questa combo e' morta, direzione: " + this.direction + " \n"); //DEBUGG
+            return 0;
+        }
+
+        //parametri che si possono regolare:
+        int MOLTIPLICATORE_VALORE_COMBO = 5;
+        float AUMENTATORE_PUNTEGGIO_APERTURA = (float)0.25;
+
+        int interruzioni_effettive = N_interruzioni - freeEnds;
+        int lung_striscia = N_mie - interruzioni_effettive;
+        float util_striscia = (float)lung_striscia / (float)X;
+
+        float pienezza = (float)N_mie / (float)this.length;
+
+        float pdv = pienezza * util_striscia;
+
+        float combo_value_passaggio_intermedio = pdv * MOLTIPLICATORE_VALORE_COMBO;
+        
+        float value_finale = combo_value_passaggio_intermedio * (1 + AUMENTATORE_PUNTEGGIO_APERTURA * freeEnds);
+
+        /*
+         * debug totale delle combo quindi lo commento invece di cancellarlo, giusto perche' magari torna utile
+         
+        System.err.print(" - DEBUG valutando combo di direzione: " + this.direction + "\n"); //DEBUGG
+        System.err.print(" - DEBUG valutando combo prima casella: i: " + this.firstCell().i + " j: " + this.firstCell().j + " state: " + this.firstCell().state + "\n"); //DEBUGG
+
+        System.err.print(" t DEBUG this.length.: " + this.length + "\n"); //DEBUGG
+        System.err.print(" t DEBUG this.N_interruzioni.: " + this.N_interruzioni + "\n"); //DEBUGG
+        System.err.print(" t DEBUG this.N_mie: " + this.N_mie + "\n"); //DEBUGG
+        System.err.print(" t DEBUG this.N_vuote: " + this.N_vuote + "\n"); //DEBUGG
+        System.err.print(" t DEBUG this.freeEnds: " + this.freeEnds + "\n"); //DEBUGG
+        System.err.print(" - DEBUG interruzioni_effettive: " + interruzioni_effettive + "\n"); //DEBUGG
+        System.err.print(" - DEBUG lung_striscia: " + lung_striscia + "\n"); //DEBUGG
+        System.err.print(" - DEBUG X         : " + X + "\n"); //DEBUGG
+        System.err.print(" - DEBUG util_striscia: " + util_striscia + "\n"); //DEBUGG
+        System.err.print(" - DEBUG pienezza: " + pienezza + "\n"); //DEBUGG
+        System.err.print(" - DEBUG pdv: " + pdv + "\n"); //DEBUGG
+        System.err.print(" - ---- -- -\n\n"); //DEBUGG
+
+        //DEBUGG tutto l'if sotto
+        if(this.direction == Direction.Horizontal) {
+            System.err.print("coordinate celle della combo:\n");
+            for (CXCell celli : this.cellList) {
+                System.err.print("i: " + celli.i + " j: " + celli.j + "\n");
+            }
+            System.err.print(" - ---- -- -\n\n"); //DEBUGG
+        }
+
+
+        if(value_finale != 0) {   //tutto l'if //DEBUGG
+
+            System.err.print(" - DEBUG sono dentro combo calcuate value e value_finale = " + value_finale+ " - \n"); //DEBUGG
+        }
+        */
+
+        return (int)value_finale;
     }
     
     /**
@@ -146,7 +208,7 @@ public class Combo {
      * @return il valore della combo
      */
     public int getValue() {
-        return value;
+        return this.value;
     }
 
     public void setValue(int newValue) {

@@ -29,6 +29,8 @@ public class Rebarbaro implements CXPlayer {
 	private double[] columns_value;
 	private int M, N, X;
 	CXCellState first;
+	CXCellState myCellState;
+	CXCellState advCellState;
 	private boolean debugMode;
 	private HashMap<String, Float> transpositionTable = new HashMap<String, Float>();
 
@@ -63,6 +65,8 @@ public class Rebarbaro implements CXPlayer {
 		this.N = N;
 		this.X = X;
 		this.first = first ? CXCellState.P1 : CXCellState.P2;
+		this.myCellState = this.first;
+		this.advCellState = first ? CXCellState.P2 : CXCellState.P1;
 
 		//this.combinations = Combo();
 		
@@ -146,9 +150,6 @@ public class Rebarbaro implements CXPlayer {
 		Integer[] L = board.getAvailableColumns(); // lista delle colonne disponibili
 		CXGameState state = board.markColumn(firstMove); // marco la prima mossa
 
-		
-		
-		
 
 		if (debugMode) {
 			System.err.print("\n");
@@ -159,19 +160,22 @@ public class Rebarbaro implements CXPlayer {
 			System.err.print("col: " + firstMove + "\t\t"); // debug
 		}
 
+		int numOfMarkedCells = board.numOfMarkedCells();   //lo uso per l'evaluate della vittoria/sconfitta
+		//lo uso come modificatore del punteggio per evitare che la somma delle combo con l'avanzare della partita superino il valore della vittoria
+
 		if (state == myWin) { // se ho vinto
 			if (debugMode) {
-				System.err.print("|won | evaluate: " + (maximizingPlayer ? -1 * depth : 1 * depth) + " ");
+				System.err.print("|won | evaluate: " + (maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1)) + " ");
 			}
 			board.unmarkColumn(); // tolgo la mossa
-			return maximizingPlayer ? -(X * 4) * depth : (X * 4) * depth; // ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+			return maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1); // ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
 
 		} else if (state == yourWin) { // se ha vinto l'avversario
 			if (debugMode) {
-				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -1 * depth : 1 * depth) + " ");
+				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1)) + " ");
 			}
 			board.unmarkColumn(); // tolgo la mossa
-			return maximizingPlayer ? -(X * 4) * depth : (X * 4) * depth; // ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
+			return maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1); // ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
 
 		/*
@@ -190,19 +194,25 @@ public class Rebarbaro implements CXPlayer {
 		 //questo if poi va sostituito quando abbiamo le hash table
 		if(maximizingPlayer) {
 			if(advCombos.size() == 0 && board.getMarkedCells().length > 0) {
-				advCombos = calculateAllCombos(advCombos, first == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1, board);
+				advCombos = calculateAllCombos(advCombos, advCellState, board);
 			}
 			else if(board.getMarkedCells().length > 0){
-				refreshCombos(advCombos, board, board.getLastMove(), first, true);
+				refreshCombos(advCombos, board, board.getLastMove(), advCellState, true);
+				refreshCombos(rebarbaroCombos, board, board.getLastMove(), myCellState, false);
 			}	
 		}
 
+
+		
+		//calcola combo
+			//per adesso usiamo calculateAllCombos se non abbiamo una lista salvata, ma l'obiettivo sarebbe non usarla mai e avere sempre una lista salvata
 		else {		
 			if(rebarbaroCombos.size() == 0 && board.getMarkedCells().length > 0) {
-				rebarbaroCombos = calculateAllCombos(rebarbaroCombos, first, board);
+				rebarbaroCombos = calculateAllCombos(rebarbaroCombos, myCellState, board);
 			}
 			else if(board.getMarkedCells().length > 0){
-				refreshCombos(rebarbaroCombos, board, board.getLastMove(), first, true);
+				refreshCombos(rebarbaroCombos, board, board.getLastMove(), myCellState, true);
+				refreshCombos(advCombos, board, board.getLastMove(), advCellState, false);
 			}
 			if(debugMode) {
 				System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); // debug
@@ -220,8 +230,13 @@ public class Rebarbaro implements CXPlayer {
 			 * sommiamo tutti i valori delle combo nella lista delle combo (lista che ci portiamo dietro come parametro di minimax)
 			 * questo da' un indicazione di quanto siamo messi bene a sequenze, ossia possibilita' di vittoria
 			 */
+
+			float score_adv_combos = evaluationFunctionCombos(advCombos);
+			float score_me_combos  =evaluationFunctionCombos(rebarbaroCombos);
 			
-			float score = maximizingPlayer ? -evaluationFunctionCombos(advCombos) : evaluationFunctionCombos(rebarbaroCombos);
+			float score = maximizingPlayer ? - (score_adv_combos - score_me_combos) : score_me_combos - score_adv_combos;
+			score = score / numOfMarkedCells;
+
 
 			if (debugMode) {
 				System.err.print("evaluate: " + score);
@@ -284,15 +299,20 @@ public class Rebarbaro implements CXPlayer {
 	//----------funzioni combo---------
 
 	public Combo createCombo(CXBoard board, CXCell cell, Direction direction) {
-		//PRECONDIZIONE:  cell DEVE contenere una pedina e il suo state deve essere == first   //non per forza first?
-		Combo newCombo = new Combo(first, direction);
-		int N_mie = 1;
+		//PRECONDIZIONE:  cell DEVE contenere una pedina e il suo state deve essere != FREE  
+		if(cell.state == CXCellState.FREE) {    //ERRORE: non deve mai stampare questo
+			System.err.print("ATTENZIONE: hai chiamato createCombo su una casella vuota. rivedere il codice e correggere\nho ritornato null.\n"); 
+			return null;
+		}
+		CXCellState newComboState = cell.state;
+		Combo newCombo = new Combo(newComboState, direction);
+		int N_mie = 1;   //aggiungo direttamente cell
         int N_vuote = 0;
         int N_interruzioni = 0;
 		newCombo.add(cell);
 		int N_free_ends = 0;
 
-		CXCellState advCellState = first == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1;
+		CXCellState advCellState = newComboState == CXCellState.P1 ? CXCellState.P2 : CXCellState.P1;
 
 		int[] dir = {0, 0};
 		CXCell x = new CXCell(cell.i, cell.j, cell.state);   //questo valore viene poi modificato appena entra nei cicli
@@ -316,7 +336,7 @@ public class Rebarbaro implements CXPlayer {
 
 		while(insideBorders(xi, xj) && x.state != advCellState) {
 
-			if (x.state == CXCellState.FREE && old_xCellState == first) {
+			if (x.state == CXCellState.FREE && old_xCellState == newComboState) {
 				N_interruzioni++;
 			}
 
@@ -325,7 +345,7 @@ public class Rebarbaro implements CXPlayer {
 
 			newCombo.add(x);
 			
-			if (x.state == first) {
+			if (x.state == newComboState) {
 				N_mie++;
 			}
 
@@ -358,7 +378,7 @@ public class Rebarbaro implements CXPlayer {
 		
 		while(x.state != advCellState && xi >= 0 && xi < M && xj >= 0 && xj < N) {
 			
-			if (x.state == CXCellState.FREE && old_xCellState == first) {
+			if (x.state == CXCellState.FREE && old_xCellState == newComboState) {
 				N_interruzioni++;
 			}
 			
@@ -367,7 +387,7 @@ public class Rebarbaro implements CXPlayer {
 
 			newCombo.addFirst(x);    //aggiungo all'inizio cosi' ho alle due estremita' della lista le due estremita' della sequenza di caselle
 
-			if (x.state == first) {
+			if (x.state == newComboState) {
 				N_mie++;
 			}
 
@@ -393,7 +413,9 @@ public class Rebarbaro implements CXPlayer {
 		if(newCombo.getLength() < X)
 			newCombo.deadCombo = true;
 
-		newCombo.setValue(newCombo.calculateComboValue(0));
+		newCombo.setValue(newCombo.calculateComboValue(0, X));
+
+		
 
 		return newCombo;
 	}
@@ -443,7 +465,6 @@ public class Rebarbaro implements CXPlayer {
 	}
 
 	public LinkedList<Combo> refreshCombos(LinkedList<Combo> comboList, CXBoard board, CXCell cell, CXCellState myState, boolean lastMoveWasMine) {
-		//PRECONDIZIONE: cell.state DEVE essere == first 
 
 		Direction[] directions = {  Direction.Vertical,
 									Direction.Horizontal,
@@ -492,12 +513,31 @@ public class Rebarbaro implements CXPlayer {
 				int[] dir_pos = direction.positiveDirection();
 				int[] dir_neg = direction.negativeDirection();
 
-				
-				CXCell cell_p = new CXCell(cell.i + dir_pos[0], cell.j + dir_pos[1], board.cellState(cell.i + dir_pos[0], cell.j + dir_pos[1]));
-				CXCell cell_n = new CXCell(cell.i + dir_neg[0], cell.j + dir_neg[1], board.cellState(cell.i + dir_neg[0], cell.j + dir_neg[1]));
+				CXCell cell_p;    //le inizializzo nelle prossime righe in base a se sono dentro o meno i bordi
+				CXCell cell_n;
+
+				//se la pedina e' fuori dai bordi, creo una pedina con posizione fittizia e state "avversario"
+				//questo posso farlo perche' ai fini dei casi qua sotto avere una pedina avversaria e' equivalente ad avere una pedina fuori dai bordi
+				//inoltre la posizione puo' essere "sbagliata" perche' tanto i casi qua sotto quando vedono che la cella e' avversaria non guardano mai la posizione
+				if(insideBorders(cell.i + dir_pos[0], cell.j + dir_pos[1])) {
+					cell_p = new CXCell(cell.i + dir_pos[0], cell.j + dir_pos[1], board.cellState(cell.i + dir_pos[0], cell.j + dir_pos[1]));
+				}
+				else {
+					cell_p = new CXCell(cell.i, cell.j, advCellState);
+				}
+
+				if(insideBorders(cell.i + dir_neg[0], cell.j + dir_neg[1])) {
+					cell_n = new CXCell(cell.i + dir_neg[0], cell.j + dir_neg[1], board.cellState(cell.i + dir_neg[0], cell.j + dir_neg[1]));
+				}
+				else {
+					cell_n = new CXCell(cell.i, cell.j, advCellState);
+				}
+
 
 				if(cell_p.state == cell_n.state && cell_n.state == advCellState) {
-					//non succede nulla 
+					//per quel che ci riguarda non succede nulla
+					//le nostre combo non cambiano
+					//ci pensera' poi l'avversario a cambiare le sue in questa posizione
 				}
 				else if(cell_p.state == cell_n.state && cell_n.state == myState) {
 					//cell_p e cell_n facevano sicuramente parte della stessa combo
@@ -509,7 +549,7 @@ public class Rebarbaro implements CXPlayer {
 				else if(cell_p.state != advCellState && cell_n.state == advCellState) {
 					//controllo che lungo la direzione positiva ci sia una mia pedina
 					while(cell_p.state != myState && 
-					cell_p.i >= 0 && cell_p.i < M && cell_p.j >= 0 && cell_p.j < N) {
+					insideBorders(cell_p.i + dir_pos[0], cell_p.j + dir_pos[1])) {
 						cell_p = new CXCell(cell_p.i + dir_pos[0], cell_p.j + dir_pos[1], board.cellState(cell_p.i + dir_pos[0], cell_p.j + dir_pos[1]));
 					}
 					//se alla fine una mia pedina c'era
@@ -522,7 +562,7 @@ public class Rebarbaro implements CXPlayer {
 				else if(cell_p.state == advCellState && cell_n.state != advCellState) {
 					//controllo che lungo la direzione positiva ci sia una mia pedina
 					while(cell_n.state != myState && 
-					cell_n.i >= 0 && cell_n.i < M && cell_n.j >= 0 && cell_n.j < N) {
+					insideBorders(cell_n.i + dir_neg[0], cell_n.j + dir_neg[1])) {
 						cell_n = new CXCell(cell_n.i + dir_neg[0], cell_n.j + dir_neg[1], board.cellState(cell_n.i + dir_neg[0], cell_n.j + dir_neg[1]));
 					}
 					//se alla fine una mia pedina c'era
@@ -564,7 +604,11 @@ public class Rebarbaro implements CXPlayer {
 		int somma = 0;
 		for(Combo combo : comboList) {
 			somma += combo.getValue();
+			if(combo.getValue() != 0) {  //tutto l'if DEBUGG
+			}
 		}
+
+		
 
 		return somma;
 	}

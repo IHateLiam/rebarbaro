@@ -18,7 +18,7 @@ public enum Direction {
                 int[] verticalArray = {+1, 0};
                 return verticalArray;
             case Horizontal:
-                int[] horizontalArray = {+1, 0};
+                int[] horizontalArray = {0, +1};
                 return horizontalArray;
             case Diagonal:
                 int[] diagonalArray = {+1, +1};
@@ -39,7 +39,7 @@ public enum Direction {
                 int[] verticalArray = {-1, 0};
                 return verticalArray;
             case Horizontal:
-                int[] horizontalArray = {-1, 0};
+                int[] horizontalArray = {0, -1};
                 return horizontalArray;
             case Diagonal:
                 int[] diagonalArray = {-1, -1};

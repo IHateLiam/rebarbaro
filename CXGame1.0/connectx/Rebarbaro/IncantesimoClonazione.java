@@ -15,7 +15,7 @@ import java.util.Comparator;
 
 
 /*
- * IncantesimoClonazione è una classe che permette di memorizzare le mosse valutate durante l'esplorazione
+ * IncantesimoClonazione e' una classe che permette di memorizzare le mosse valutate durante l'esplorazione
  * Esse vengono salvate nella HashMap map, che ha come chiave un long che rappresenta l'hash della board
  * e come valore un oggetto di tipo Mongolfiera che contiene la mossa valutata e il suo valore, oltre 
  * ad altri parametri utili per la valutazione e l'esplorazione.
@@ -24,7 +24,7 @@ import java.util.Comparator;
  * - uno utilizzando zoobrist hashing
  * - uno utilizzando fnv1a hashing
  * 
- * da valutare quale sia più performante
+ * da valutare quale sia piu' performante
  */
 
 public class IncantesimoClonazione {
@@ -169,8 +169,8 @@ public class IncantesimoClonazione {
      * - se sono stati visitati nella stessa iterazione allora prende direttamente il value
      * - altrimenti li inserisce in una lista 
      * 
-     * La lista servirà successivamente per organizzare gli elementi per valori in modo tale
-     * da scegliere le mosse in ordine di "bontà" dell'ultima
+     * La lista servira' successivamente per organizzare gli elementi per valori in modo tale
+     * da scegliere le mosse in ordine di "bonta'" dell'ultima
      * @param board
      * @param List L
      * @param maximizingPlayer
