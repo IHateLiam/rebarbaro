@@ -2,10 +2,10 @@ package connectx.Rebarbaro;
 
 public class ScoreStruct {
     public float score;
-    public boolean victory;
+    public int victoryDepth;
 
-    public ScoreStruct(float score, boolean victory) {
+    public ScoreStruct(float score, int victory) {
         this.score = score;
-        this.victory = victory;
+        this.victoryDepth = victory;
     }
 }

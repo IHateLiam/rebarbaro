@@ -123,16 +123,16 @@ public class Combo {
         float AUMENTATORE_PUNTEGGIO_APERTURA = (float)0.15;
 
         int interruzioni_effettive = N_interruzioni - freeEnds;
-        int lung_striscia = N_mie - interruzioni_effettive;
+        int lung_striscia = N_mie + interruzioni_effettive;
 
             float util_striscia = (float)lung_striscia / (float)X;
 
             //peggiore le prestazioni quindi per ora lo lascio disattivato
             float moltiplicatore_altezza_media_pedine;    //dovrebbe essere sempre <=1
-            if(considera_combo_alte)      moltiplicatore_altezza_media_pedine = (float)somma_altezze_pedine_mie / (M*M);
+            if(false)      moltiplicatore_altezza_media_pedine = (float)somma_altezze_pedine_mie / (M*M);
             else                          moltiplicatore_altezza_media_pedine = 1;
 
-            float pienezza = (float)N_mie / (float)this.length;
+            float pienezza = (float)N_mie / (float)lung_striscia;
 
                 float pdv = pienezza * util_striscia * moltiplicatore_altezza_media_pedine;
 
@@ -142,9 +142,10 @@ public class Combo {
         float value_finale = combo_value_passaggio_intermedio * (1 + freeEnds * AUMENTATORE_PUNTEGGIO_APERTURA);
 
 
-        /*
-         * debug totale delle combo quindi lo commento invece di cancellarlo, giusto perche' magari torna utile
-         
+        
+         /* debug totale delle combo quindi lo commento invece di cancellarlo, giusto perche' magari torna utile
+
+        System.err.print(" - DEBUG valutando combo di state: " + this.myCellState + "\n"); //DEBUGG
         System.err.print(" - DEBUG valutando combo di direzione: " + this.direction + "\n"); //DEBUGG
         System.err.print(" - DEBUG valutando combo prima casella: i: " + this.firstCell().i + " j: " + this.firstCell().j + " state: " + this.firstCell().state + "\n"); //DEBUGG
 
@@ -159,24 +160,24 @@ public class Combo {
         System.err.print(" - DEBUG util_striscia: " + util_striscia + "\n"); //DEBUGG
         System.err.print(" - DEBUG pienezza: " + pienezza + "\n"); //DEBUGG
         System.err.print(" - DEBUG pdv: " + pdv + "\n"); //DEBUGG
-        System.err.print(" - ---- -- -\n\n"); //DEBUGG
+        
 
         //DEBUGG tutto l'if sotto
-        if(this.direction == Direction.Horizontal) {
+        
             System.err.print("coordinate celle della combo:\n");
             for (CXCell celli : this.cellList) {
-                System.err.print("i: " + celli.i + " j: " + celli.j + "\n");
+                System.err.print("i: " + celli.i + " j: " + celli.j + " state: " + celli.state + "\n");
             }
             System.err.print(" - ---- -- -\n\n"); //DEBUGG
-        }
+        
 
 
         if(value_finale != 0) {   //tutto l'if //DEBUGG
 
             System.err.print(" - DEBUG sono dentro combo calcuate value e value_finale = " + value_finale+ " - \n"); //DEBUGG
         }
-        */
-
+        
+*/
         return (int)value_finale;
     }
 
