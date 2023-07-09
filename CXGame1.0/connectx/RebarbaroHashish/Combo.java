@@ -15,18 +15,18 @@ import connectx.CXCellState;
  * in una particolare direzione e appartenenti a uno specifico stato di cella (rosso o giallo).
  */
 public class Combo {
-    private CXCellState myCellState; // Stato delle pedine della combo (rosso o giallo)
-    private LinkedList<CXCell> cellList; // Lista delle celle che compongono la combo
-    private Direction direction; // Direzione della combo
-    private int value; // Valore associato alla combo
+    protected CXCellState myCellState; // Stato delle pedine della combo (rosso o giallo)
+    protected LinkedList<CXCell> cellList; // Lista delle celle che compongono la combo
+    protected Direction direction; // Direzione della combo
+    protected int value; // Valore associato alla combo
 
     protected int N_mie; // Numero di pedine appartenenti al giocatore corrente nella combo
     protected int N_vuote; // Numero di caselle vuote nella combo
     protected int N_interruzioni; // Numero di interruzioni nella combo
     protected int somma_altezze_pedine_mie;   //la somma della coordinata i (riga) (invertita: righe piu' alte hanno valore piu' alto) di tutte le mie pedine nella combo
 
-    private int length; // Lunghezza della combo
-    private int freeEnds; // Numero di estremita' aperte della combo
+    protected int length; // Lunghezza della combo
+    protected int freeEnds; // Numero di estremita' aperte della combo
 
     protected boolean deadCombo;   //se e' chiusa da entrambi i lati e non e' lunga abbastanza da vincere
 
@@ -121,7 +121,7 @@ public class Combo {
 
         //parametri che si possono regolare:
         int MOLTIPLICATORE_VALORE_COMBO = 5;
-        float AUMENTATORE_PUNTEGGIO_APERTURA = (float)0.15;
+        float AUMENTATORE_PUNTEGGIO_APERTURA = (float)0.25;
 
         int interruzioni_effettive = N_interruzioni - freeEnds;
         int lung_striscia = N_mie + interruzioni_effettive;
@@ -133,7 +133,7 @@ public class Combo {
             if(false)      moltiplicatore_altezza_media_pedine = (float)somma_altezze_pedine_mie / (M*M);
             else                          moltiplicatore_altezza_media_pedine = 1;
 
-            float pienezza = (float)N_mie / (float)lung_striscia;
+            float pienezza = 1.5f * (float)N_mie / (float)lung_striscia;   //1.5 perche' voglio dare piu' valore a questo tipo di combo
 
                 float pdv = pienezza * util_striscia * moltiplicatore_altezza_media_pedine;
 
@@ -177,8 +177,8 @@ public class Combo {
 
             System.err.print(" - DEBUG sono dentro combo calcuate value e value_finale = " + value_finale+ " - \n"); //DEBUGG
         }
-        
-*/
+        */
+
         return (int)value_finale;
     }
 
@@ -221,6 +221,8 @@ public class Combo {
                     winningCells.add(old_Cell);
                     winningCellsFound++;
                 }
+
+                old_Cell = cell;
             }
         }
 

@@ -1,5 +1,6 @@
 package connectx.RebarbaroHashish;
 
+//ADESSO TOLGO I DEBUGG PER IL NULL POINTER (che probabilmente era solo una mancata inizializzazione delle liste delle freeWinningCells)
 
 import connectx.CXPlayer;
 import connectx.CXBoard;
@@ -69,7 +70,7 @@ public class RebarbaroHashish implements CXPlayer {
         rand = new Random(System.currentTimeMillis());
         myWin = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
-		TIMEOUT = timeout_in_secs - 2;
+		TIMEOUT = timeout_in_secs / 2;
 		columns_value = calculate_columns_value(N);
 		this.M = M;
 		this.N = N;
@@ -82,6 +83,9 @@ public class RebarbaroHashish implements CXPlayer {
 
 		this.myComboList  = new LinkedList<Combo>();
 		this.advComboList = new LinkedList<Combo>();
+		this.myWinningFreeCells = new LinkedList<CXCell>();
+		this.advWinningFreeCells = new LinkedList<CXCell>();
+
 		
 		this.DECISIONTREEDEPTH = 2;
 
@@ -108,6 +112,18 @@ public class RebarbaroHashish implements CXPlayer {
 		if(board.numOfMarkedCells() > 0)       //sostanzialmente entra in questo if se gioca come secondo
 			refreshCombos(advComboList, board, board.getLastMove(), advCellState, true, halfBoardFull, advWinningFreeCells);
 		
+		//non uso le originali perche' il minimax fa delle "ipotesi". non voglio che le ipotesi vengano salvate: la lista diventerebbe enorme e non controllabile
+		
+		LinkedList<Combo> myComboListCopy = new LinkedList<Combo>(myComboList);
+		LinkedList<Combo> advCombosCopy = new LinkedList<Combo>(advComboList);
+		LinkedList<CXCell> myWinningFreeCellsCopy = new LinkedList<CXCell>(myWinningFreeCells);
+		LinkedList<CXCell> advWinningFreeCellsCopy = new LinkedList<CXCell>(advWinningFreeCells);
+/*  copio usando il costruttore
+		myComboListCopy = comboListCopy(myComboList);
+		advCombosCopy = comboListCopy(advComboList);
+		myWinningFreeCellsCopy = cellListCopy(myWinningFreeCells);
+		advWinningFreeCellsCopy = cellListCopy(advWinningFreeCells);
+		*/
 
 		for (int col : availableColumns) {
 			try {
@@ -120,8 +136,8 @@ public class RebarbaroHashish implements CXPlayer {
 				depth = DECISIONTREEDEPTH;
 				long timeForColumn = System.currentTimeMillis();
 
-				float score = minimax(board, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false, myComboList, advComboList, 
-										new LinkedList<CXCell>(), new LinkedList<CXCell>(), halfBoardFull); //minimax
+				float score = minimax(board, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false, myComboListCopy, advCombosCopy, 
+										myWinningFreeCellsCopy, advWinningFreeCellsCopy, halfBoardFull); //minimax
 				//per adesso le combo le passiamo come vuote, volendo si potrebbe fare che il minimax alla fine ti ritorna una lista cosi' ce l'hai buona per dopo bho
 				//magari prima del return di selectColumn ci salviamo nei campi di rebarbaro le combo di rebarbaro e dell'avversario, aggiungendoci l'ultima mossa
 
@@ -140,7 +156,7 @@ public class RebarbaroHashish implements CXPlayer {
 					columnScores[col] = score;    //gia' moltiplicato per il columns_value[i]
 				}
 
-				if(System.currentTimeMillis() - timeForColumn < (timeForColumn/2))
+				if(System.currentTimeMillis() - timeForColumn < (timeForColumn/3))
 					DECISIONTREEDEPTH++;
 				else if(DECISIONTREEDEPTH > 2)
 					DECISIONTREEDEPTH--;
@@ -186,15 +202,16 @@ public class RebarbaroHashish implements CXPlayer {
 			}
 		}
 
+		//System.err.print("--- faccio la mossa, bestCol = " + bestCol + "\n");   //DEBUGG DECISIONTREEDEPTH
 		return bestCol; //ritorno la colonna migliore
 	}
 
 
- 
+
 
 	//Il codice implementa l'algoritmo minimax con potatura alpha-beta, con una profondita' massima di 4 (scelta arbitraria). La funzione minimax ritorna 1 se il giocatore che sta massimizzando ha vinto, -1 altrimenti; ritorna -1 se il giocatore che sta massimizzando ha perso, 1 altrimenti; 0 in caso di pareggio. La funzione minimax e' ricorsiva, e viene eseguita una volta per ogni colonna disponibile. La funzione minimax riceve come parametri: l'oggetto CXBoard, la profondita' di ricerca, la prima mossa da eseguire, i valori di alpha e beta e una variabile booleana che indica quale giocatore sta massimizzando. La funzione ritorna l'intero corrispondente al punteggio ottenuto dalla mossa.
-	public float minimax(CXBoard board, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer, LinkedList<Combo> originalRbarbaroCombos, 
-						LinkedList<Combo> originalAdvCombos, LinkedList<CXCell> rebWinningFreeCells, LinkedList<CXCell> advWinningFreeCells, boolean halfBoardFull) {
+	public float minimax(CXBoard board, int depth, int firstMove, float alpha, float beta, boolean maximizingPlayer, LinkedList<Combo> originalRebarbaroCombos, 
+						LinkedList<Combo> originalAdvCombos, LinkedList<CXCell> originalRebWinningFreeCells, LinkedList<CXCell> originalAdvWinningFreeCells, boolean halfBoardFull) {
 		//tempo
 		long startTime = System.currentTimeMillis();
 
@@ -202,8 +219,36 @@ public class RebarbaroHashish implements CXPlayer {
 		CXGameState state = board.markColumn(firstMove); // marco la prima mossa
 
 		//copio le liste di combo per evitare che mi modifichi le originale che stanno nei campi di rebarbaro
-		LinkedList<Combo> rebarbaroCombos = originalRbarbaroCombos;
+		/*  non le copio in questo modo che non va bene
+		LinkedList<Combo> rebarbaroCombos = originalRebarbaroCombos;
 		LinkedList<Combo> advCombos = originalAdvCombos;
+
+		LinkedList<CXCell> rebWinningFreeCells = originalRebWinningFreeCells;
+		LinkedList<CXCell> advWinningFreeCells = originalAdvWinningFreeCells;
+*/
+		LinkedList<Combo> rebarbaroCombos = new LinkedList<Combo>(originalRebarbaroCombos);
+		LinkedList<Combo> advCombos = new LinkedList<Combo>(originalAdvCombos);
+		LinkedList<CXCell> rebWinningFreeCells = new LinkedList<CXCell>(originalRebWinningFreeCells);
+		LinkedList<CXCell> advWinningFreeCells = new LinkedList<CXCell>(originalAdvWinningFreeCells);
+  //DEBUGG combo list (se le salva bene, se se le porta dietro bene e le free winning cells)
+		System.err.print("rebarbaroCombos.size(): " + rebarbaroCombos.size() + "\n");  //DEBUGG COMBOLIST
+		System.err.print("advCombos.size(): " + advCombos.size() + "\n");  //DEBUGG COMBOLIST
+		//per adesso dimentico le winningfreecells
+		System.err.print("rebWinningFreeCells.size(): " + rebWinningFreeCells.size() + "\n");  //DEBUGG COMBOLIST
+		System.err.print("advWinningFreeCells.size(): " + advWinningFreeCells.size() + "\n");  //DEBUGG COMBOLIST
+		//DEBUGG COMBOLIST anche questi for
+		if(rebWinningFreeCells.size() > 0)
+			System.err.print("rebWinningFreeCells, elenco celle:\n");  //DEBUGG COMBOLIST
+		for(CXCell freecell : rebWinningFreeCells) {
+			System.err.print("  i: " + freecell.i + " j: " + freecell.j + " state: " + freecell.state + "\n");  //DEBUGG COMBOLIST
+		}
+		if(advWinningFreeCells.size() > 0)
+			System.err.print("advWinningFreeCells, elenco celle:\n");  //DEBUGG COMBOLIST
+		for(CXCell freecell : advWinningFreeCells) {
+			System.err.print("  i: " + freecell.i + " j: " + freecell.j + " state: " + freecell.state + "\n");  //DEBUGG COMBOLIST
+		}
+		//System.err.print("depth: " + depth + " (DECISIONTREEDEPTH : " + DECISIONTREEDEPTH + ")\n");  //DEBUGG COMBOLIST
+
 		
 
 
@@ -266,6 +311,7 @@ public class RebarbaroHashish implements CXPlayer {
 		else {		
 			refreshCombos(rebarbaroCombos, board, board.getLastMove(), myCellState, true, halfBoardFull, rebWinningFreeCells);
 			refreshCombos(advCombos, board, board.getLastMove(), advCellState, false, halfBoardFull, advWinningFreeCells);
+
 		}
 
 
@@ -277,7 +323,7 @@ public class RebarbaroHashish implements CXPlayer {
 		 
 
 		if (depth == 0 || state == CXGameState.DRAW) { // se sono arrivato alla profondita' massima o se ho pareggiato
-			   
+			
 			float score_adv_combos = evaluationFunctionCombos(advCombos);
 			float score_me_combos  = evaluationFunctionCombos(rebarbaroCombos);
 			
@@ -300,6 +346,8 @@ public class RebarbaroHashish implements CXPlayer {
 			for (int col : L) {
 
 				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
+					//System.err.print("BREAK (maximizing) DECISIONTREEDEPTH: " + DECISIONTREEDEPTH + "\n");   //DEBUGG DECISIONTREEDEPTH 
+					DECISIONTREEDEPTH--;
                     break;
                 }
 				float score = minimax(board, depth - 1, col, alpha, beta, false, rebarbaroCombos, advCombos, rebWinningFreeCells, advWinningFreeCells, halfBoardFull);
@@ -325,6 +373,8 @@ public class RebarbaroHashish implements CXPlayer {
 			for (int col : L) {
 
 				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
+					//System.err.print("BREAK (minimizing) DECISIONTREEDEPTH: " + DECISIONTREEDEPTH + "\n");   //DEBUGG DECISIONTREEDEPTH
+					DECISIONTREEDEPTH--;
                     break;
                 }
 
@@ -522,7 +572,7 @@ public class RebarbaroHashish implements CXPlayer {
 		
 		//vedo se ha caselle vuote vincenti, che uso poi per calcolare i valori di combo vicine
 		//se non ce ne sono la funzione esce subito, quindi ha costo irrisorio
-		LinkedList<CXCell> winningCellsFound = newCombo.findFreeWinningCells(X, N_mie - N_interruzioni + N_free_ends);
+		LinkedList<CXCell> winningCellsFound = newCombo.findFreeWinningCells(X, N_mie + N_interruzioni - N_free_ends);
 		
 
 		if(winningCellsFound.size() > 0) {
@@ -530,11 +580,11 @@ public class RebarbaroHashish implements CXPlayer {
 		}
 
 
-		//System.err.print("\n---------\n--------\n");    //DEBUGG
-		//System.err.print("adesso calcolo il valore della combo creata a partire da i: " + cell.i + " j: " + cell.j + " state: " + cell.state + "\n"); //DEBUGG
+		//System.err.print("\n---------\n--------\n");    //DEBUGG COMBO
+		//System.err.print("adesso calcolo il valore della combo creata a partire da i: " + cell.i + " j: " + cell.j + " state: " + cell.state + "\n"); //DEBUGG COMBO
 		newCombo.setValue(newCombo.calculateComboValue(0, X, M, halfBoardFull));
-		//System.err.print(" - DEBUG trovate " + (winningCellsFound.size()) + " caselle vuote vincenti\n"); //DEBUGG
-		//System.err.print(" - ---- -- -\n\n"); //DEBUGG
+		//System.err.print(" - DEBUG trovate " + (winningCellsFound.size()) + " caselle vuote vincenti\n"); //DEBUGG COMBO
+		//System.err.print(" - ---- -- -\n\n"); //DEBUGG COMBO
 		
 
 		return newCombo;
@@ -717,6 +767,27 @@ public class RebarbaroHashish implements CXPlayer {
 			return -x;
 	}
 
+
+	// 	DEBUGG IN REALTA' QUESTE COPIE NON LE USO    le tengo per non doverle riscrivere nel caso ma si possono cancellare
+
+	//ritorna una lista di combo uguale a quella passata nell'argomento
+	//usata semplicemente per modificare l'indirizzo di riferimento nell'heap e simulare un passaggio per valore
+	//(altrimenti java di default passa il riferimento, per i tipi non primitivi)
+	public LinkedList<Combo> comboListCopy(LinkedList<Combo> listIWantToDuplicate) {
+		LinkedList<Combo> newList = new LinkedList<Combo>();
+		for(Combo combo : listIWantToDuplicate) {
+			newList.add(combo);
+		}
+		return newList;
+	}
+
+	public LinkedList<CXCell> cellListCopy(LinkedList<CXCell> listIWantToDuplicate) {
+		LinkedList<CXCell> newList = new LinkedList<CXCell>();
+		for(CXCell cell : listIWantToDuplicate) {
+			newList.add(cell);
+		}
+		return newList;
+	}
 
 	public LinkedList<Combo> calculateAllCombos(LinkedList<Combo> comboList, CXCellState myState, CXBoard board, LinkedList<CXCell> freeWinningCells, boolean halfBoardFull) {
 		CXCell[] markedCells = board.getMarkedCells();
