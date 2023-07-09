@@ -47,11 +47,10 @@ public class RebarbaroHashish implements CXPlayer {
 	private int DECISIONTREEDEPTH;
 
 	private int totalBoardCells;    
-	private int halfGameCells;      //numero di celle tale da determinare che siamo a meta' partita
-		//serve piu' che altro a non doverla calcolare tutte le volte
+	private int halfGameCells;      //numero di celle tale da determinare che siamo a meta' partita, serve piu' che altro a non doverla calcolare tutte le volte
 
 
-
+	
     /*Default empty constructor*/
     public RebarbaroHashish() {
 
@@ -113,18 +112,11 @@ public class RebarbaroHashish implements CXPlayer {
 			refreshCombos(advComboList, board, board.getLastMove(), advCellState, true, halfBoardFull, advWinningFreeCells);
 		
 		//non uso le originali perche' il minimax fa delle "ipotesi". non voglio che le ipotesi vengano salvate: la lista diventerebbe enorme e non controllabile
-		
 		LinkedList<Combo> myComboListCopy = new LinkedList<Combo>(myComboList);
 		LinkedList<Combo> advCombosCopy = new LinkedList<Combo>(advComboList);
 		LinkedList<CXCell> myWinningFreeCellsCopy = new LinkedList<CXCell>(myWinningFreeCells);
 		LinkedList<CXCell> advWinningFreeCellsCopy = new LinkedList<CXCell>(advWinningFreeCells);
-/*  copio usando il costruttore
-		myComboListCopy = comboListCopy(myComboList);
-		advCombosCopy = comboListCopy(advComboList);
-		myWinningFreeCellsCopy = cellListCopy(myWinningFreeCells);
-		advWinningFreeCellsCopy = cellListCopy(advWinningFreeCells);
-		*/
-
+		
 		for (int col : availableColumns) {
 			try {
 				
@@ -219,38 +211,10 @@ public class RebarbaroHashish implements CXPlayer {
 		CXGameState state = board.markColumn(firstMove); // marco la prima mossa
 
 		//copio le liste di combo per evitare che mi modifichi le originale che stanno nei campi di rebarbaro
-		/*  non le copio in questo modo che non va bene
-		LinkedList<Combo> rebarbaroCombos = originalRebarbaroCombos;
-		LinkedList<Combo> advCombos = originalAdvCombos;
-
-		LinkedList<CXCell> rebWinningFreeCells = originalRebWinningFreeCells;
-		LinkedList<CXCell> advWinningFreeCells = originalAdvWinningFreeCells;
-*/
 		LinkedList<Combo> rebarbaroCombos = new LinkedList<Combo>(originalRebarbaroCombos);
 		LinkedList<Combo> advCombos = new LinkedList<Combo>(originalAdvCombos);
 		LinkedList<CXCell> rebWinningFreeCells = new LinkedList<CXCell>(originalRebWinningFreeCells);
 		LinkedList<CXCell> advWinningFreeCells = new LinkedList<CXCell>(originalAdvWinningFreeCells);
-  //DEBUGG combo list (se le salva bene, se se le porta dietro bene e le free winning cells)
-		System.err.print("rebarbaroCombos.size(): " + rebarbaroCombos.size() + "\n");  //DEBUGG COMBOLIST
-		System.err.print("advCombos.size(): " + advCombos.size() + "\n");  //DEBUGG COMBOLIST
-		//per adesso dimentico le winningfreecells
-		System.err.print("rebWinningFreeCells.size(): " + rebWinningFreeCells.size() + "\n");  //DEBUGG COMBOLIST
-		System.err.print("advWinningFreeCells.size(): " + advWinningFreeCells.size() + "\n");  //DEBUGG COMBOLIST
-		//DEBUGG COMBOLIST anche questi for
-		if(rebWinningFreeCells.size() > 0)
-			System.err.print("rebWinningFreeCells, elenco celle:\n");  //DEBUGG COMBOLIST
-		for(CXCell freecell : rebWinningFreeCells) {
-			System.err.print("  i: " + freecell.i + " j: " + freecell.j + " state: " + freecell.state + "\n");  //DEBUGG COMBOLIST
-		}
-		if(advWinningFreeCells.size() > 0)
-			System.err.print("advWinningFreeCells, elenco celle:\n");  //DEBUGG COMBOLIST
-		for(CXCell freecell : advWinningFreeCells) {
-			System.err.print("  i: " + freecell.i + " j: " + freecell.j + " state: " + freecell.state + "\n");  //DEBUGG COMBOLIST
-		}
-		//System.err.print("depth: " + depth + " (DECISIONTREEDEPTH : " + DECISIONTREEDEPTH + ")\n");  //DEBUGG COMBOLIST
-
-		
-
 
 		if (debugMode) {
 			System.err.print("\n");
@@ -261,11 +225,7 @@ public class RebarbaroHashish implements CXPlayer {
 			System.err.print("col: " + firstMove + "\t\t"); // debug
 		}
 
-		int numOfMarkedCells = board.numOfMarkedCells();   //lo uso per l'evaluate della vittoria/sconfitta
-		//lo uso come modificatore del punteggio per evitare che la somma delle combo con l'avanzare della partita superino il valore della vittoria
-
-		//boolean halfBoardFull = numOfMarkedCells > halfGameCells;      //provo a considerarlo non al minimax ma al selectcolumn
-		//a meta' partita smetto di considerare le colonne centrali e inizio a dare piu' valore alle combo in posizioni elevate
+		int numOfMarkedCells = board.numOfMarkedCells();   //lo uso per l'evaluate della vittoria/sconfitta come modificatore del punteggio per evitare che la somma delle combo con l'avanzare della partita superino il valore della vittoria
 
 		if (state == myWin) { // se ho vinto
 			if (debugMode) {
@@ -273,7 +233,6 @@ public class RebarbaroHashish implements CXPlayer {
 			}
 			board.unmarkColumn(); // tolgo la mossa
 			return maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1);
-			//return new ScoreStruct(maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1), !maximizingPlayer);    //idea nuova
 			// ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
 
 		} else if (state == yourWin) { // se ha vinto l'avversario
@@ -282,25 +241,10 @@ public class RebarbaroHashish implements CXPlayer {
 			}
 			board.unmarkColumn(); // tolgo la mossa
 			return maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1);
-			//return new ScoreStruct(maximizingPlayer ? -(X) * (depth + 1) : (X) * (depth + 1), maximizingPlayer); 
 			// ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
 
-		//
-		// SE esiste una comboList dall'hash prendila da li'
-		// ALTRIMENTI calcola cosi':
-		// refreshCombos(
-		// 				comboList       -> presa dai parametri passati dal minmax (ho le combo del nodo di sopra)
-		// 								   -nel caso questa sia la prima mossa in assoluto posso fare tipo un controllo if comboList.length == 0 allora creaCombo(prima mossa)
-		// 				board			    -> presa dai parametri del minmax
-		// 				cell		    -> new CXCell(RP[firstMove] + 1, firstMove, board.getLastMove().state)
-		// 				myState         -> first
-		// 				lastMoveWasMine -> board.getLastMove().state == first ? true : false
-		// )
-		 
-
 		//aggiorno le liste di combo. mi serve per quando arrivo alla foglia per fare l'evaluate
-		 
 		//maximizingPlayer significa sostanzialmente che sta giocando l'avversario
 		if(maximizingPlayer) {
 			refreshCombos(advCombos, board, board.getLastMove(), advCellState, true, halfBoardFull, advWinningFreeCells);
@@ -314,13 +258,10 @@ public class RebarbaroHashish implements CXPlayer {
 
 		}
 
-
 		if(debugMode) {
 			System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); // debug
 			System.err.print("col: " + firstMove + "\t\t"); // debug
 		}
-
-		 
 
 		if (depth == 0 || state == CXGameState.DRAW) { // se sono arrivato alla profondita' massima o se ho pareggiato
 			
@@ -329,7 +270,6 @@ public class RebarbaroHashish implements CXPlayer {
 			
 			float score = maximizingPlayer ? - (score_adv_combos - score_me_combos) : score_me_combos - score_adv_combos;
 			score = score / numOfMarkedCells;
-
 
 			if (debugMode) {
 				System.err.print("evaluate: " + score + " (my combos score: " + score_me_combos + ", adv combos score: " + score_adv_combos + " ) ");
@@ -340,16 +280,15 @@ public class RebarbaroHashish implements CXPlayer {
 
 		L = board.getAvailableColumns(); // aggiorno la lista delle colonne disponibili
 
-		if (maximizingPlayer) {
-			// Maximize player 1's score
+		if (maximizingPlayer) { // se e' il turno dell'avversario
 			float maxScore = Integer.MIN_VALUE;
 			for (int col : L) {
 
-				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
-					//System.err.print("BREAK (maximizing) DECISIONTREEDEPTH: " + DECISIONTREEDEPTH + "\n");   //DEBUGG DECISIONTREEDEPTH 
+				if (System.currentTimeMillis() - startTime > timeForColumn) { //controllo il tempo
 					DECISIONTREEDEPTH--;
                     break;
                 }
+
 				float score = minimax(board, depth - 1, col, alpha, beta, false, rebarbaroCombos, advCombos, rebWinningFreeCells, advWinningFreeCells, halfBoardFull);
 
 				if (debugMode) {
@@ -359,7 +298,7 @@ public class RebarbaroHashish implements CXPlayer {
 				maxScore = Math.max(maxScore, score);
 				alpha = Math.max(alpha, score);
 				if (beta <= alpha) {
-					// Beta cutoff
+					// Pruning su Beta
 					break;
 				}
 
@@ -367,13 +306,11 @@ public class RebarbaroHashish implements CXPlayer {
 			board.unmarkColumn();
 			return maxScore;
 
-		} else {
-			// Minimize player 2's score
+		} else { // se e' il mio turno
 			float minScore = Integer.MAX_VALUE;
 			for (int col : L) {
 
-				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
-					//System.err.print("BREAK (minimizing) DECISIONTREEDEPTH: " + DECISIONTREEDEPTH + "\n");   //DEBUGG DECISIONTREEDEPTH
+				if (System.currentTimeMillis() - startTime > timeForColumn) { //controllo il tempo
 					DECISIONTREEDEPTH--;
                     break;
                 }
@@ -387,7 +324,7 @@ public class RebarbaroHashish implements CXPlayer {
 				minScore = Math.min(minScore, score);
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
-					// Alpha cutoff
+					// Pruning su Alpha
 					break;
 				}
 			}
@@ -586,7 +523,6 @@ public class RebarbaroHashish implements CXPlayer {
 		//System.err.print(" - DEBUG trovate " + (winningCellsFound.size()) + " caselle vuote vincenti\n"); //DEBUGG COMBO
 		//System.err.print(" - ---- -- -\n\n"); //DEBUGG COMBO
 		
-
 		return newCombo;
 	}
 
@@ -767,61 +703,15 @@ public class RebarbaroHashish implements CXPlayer {
 			return -x;
 	}
 
-
-	// 	DEBUGG IN REALTA' QUESTE COPIE NON LE USO    le tengo per non doverle riscrivere nel caso ma si possono cancellare
-
-	//ritorna una lista di combo uguale a quella passata nell'argomento
-	//usata semplicemente per modificare l'indirizzo di riferimento nell'heap e simulare un passaggio per valore
-	//(altrimenti java di default passa il riferimento, per i tipi non primitivi)
-	public LinkedList<Combo> comboListCopy(LinkedList<Combo> listIWantToDuplicate) {
-		LinkedList<Combo> newList = new LinkedList<Combo>();
-		for(Combo combo : listIWantToDuplicate) {
-			newList.add(combo);
-		}
-		return newList;
-	}
-
-	public LinkedList<CXCell> cellListCopy(LinkedList<CXCell> listIWantToDuplicate) {
-		LinkedList<CXCell> newList = new LinkedList<CXCell>();
-		for(CXCell cell : listIWantToDuplicate) {
-			newList.add(cell);
-		}
-		return newList;
-	}
-
-	public LinkedList<Combo> calculateAllCombos(LinkedList<Combo> comboList, CXCellState myState, CXBoard board, LinkedList<CXCell> freeWinningCells, boolean halfBoardFull) {
-		CXCell[] markedCells = board.getMarkedCells();
-
-		Direction[] directions = {  Direction.Vertical,
-									Direction.Horizontal,
-									Direction.Diagonal, 
-									Direction.AntiDiagonal};
-
-		for(CXCell cell : markedCells) {
-			for(Direction direction : directions) {
-				if(cell.state == myState) {
-					if(findCombo(comboList, cell, direction) == null) {
-						comboList.add(createCombo(board, cell, direction, freeWinningCells, halfBoardFull));
-						
-					}
-				}
-			}
-		}
-		return comboList;
-	}
-
 	public int evaluationFunctionCombos(LinkedList<Combo> comboList) {
 		int somma = 0;
 		for(Combo combo : comboList) {
 			somma += combo.getValue();
 		}
-
 		return somma;
 	}
 
-
 	//     combo value con le caselle vuote vincenti adiacenti verticalmente
-
 	//calcola quante coppie di caselle vuote "vincenti" disposte una sopra l'altra ci sono
 	public int calculateNumberOfWinningAdiacentCells(LinkedList<CXCell> winningFreeCells) {
 		int N_WAC = 0;
@@ -842,10 +732,7 @@ public class RebarbaroHashish implements CXPlayer {
 		return N_WAC;
 	}
 
-
 	//  ---   combo value con gli heap
-
-
 	//modifica l'array in input riempiendolo con i valori delle combo di comboList
 	private void makeComboValuesArray(LinkedList<Combo> comboList, int[] array) {
 		int i = 1;
@@ -909,7 +796,6 @@ public class RebarbaroHashish implements CXPlayer {
 		*/
 
 		int winning_adiacent_free_cells_multiplier = calculateNumberOfWinningAdiacentCells(winningFreeCells) * 3 + 1;
-		//System.err.print("trovate " + ((winning_adiacent_free_cells_multiplier-1)/3) + " caselle vuote vincenti consecutive\n");   //DEBUGG
 		// + 1 cosi' quando lo moltiplico per somma non lo azzera
 		// * 3 perche' do valore triplo alle board con questa casistica, visto che sono un'ottima probabilita' di vittoria
 
@@ -917,527 +803,28 @@ public class RebarbaroHashish implements CXPlayer {
 
 		return somma;
 	}
-
-
 }
 
-	
-	/*This function is used to determine how many pieces of the same color are in the direction specified by the parameter direction. The variable direction can be 1, 2, 3, or 4, representing the four diagonal directions. The variable state represents the color of the pieces, and the variable k represents how many pieces in a row will win the game. The variable row and col represent the row and column of the cell where the current piece is located. The function returns the number of pieces of the same color as the current piece in the direction specified by the parameter direction.*/
-	/*
-	private int nearPieces(int row, int col, CXBoard board, CXCellState state, int k, int direction) {
-		int pieces = 0;
-		int i = row;
-		int j = col;
-		int count = 0;
-		while (count < k) {
-			if (direction == 1) {
-				i--;
-			} else if (direction == 2) {
-				j--;
-			} else if (direction == 3) {
-				i--;
-				j--;
-			} else if (direction == 4) {
-				i--;
-				j++;
-			}
-			if (i < 0 || j < 0 || i >= M || j >= N) {
-				break;
-			}
-			if (board.cellState(i,j) == state) {
-				pieces++;
-			} else {
-				break;
-			}
-			count++;
-		}
-		return pieces;
-	}
-	*/
-
-		/*Questa funzione calcola il bonus per le colonne che contengono pezzi dell'avversario (cioe' dello stato opposto a quello passato come parametro). La funzione conta il numero di pezzi dell'avversario in ogni colonna e calcola il bonus come 2^(n-1), dove n e' il numero di pezzi dell'avversario nella colonna. In questo modo, le colonne con piu' pezzi dell'avversario ricevono un bonus maggiore rispetto alle colonne con meno pezzi dell'avversario. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getOpponentColumns(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		CXCellState opponentState = (state == CXCellState.P1) ? CXCellState.P2 : CXCellState.P1; // stato dell'avversario
-		for (int col = 0; col < board.N; col++) {
-			int count = 0;
-			for (int row = 0; row < board.M; row++) {
-				if (board.cellState(row, col) == opponentState) {
-					count++;
-				}
-			}
-			if (count > 0) {
-				bonus += (int) Math.pow(2, count - 1);
-			}
-		}
-		return bonus;
-	}
-	*/
-
-	/*
-	 * 		private float evaluationFunction(CXBoard board) {
-		CXCell lastCell = board.getLastMove();
-		int row = lastCell.i;
-		int col = lastCell.j;
-		int score = 0;
-
-		/*
-		int verticalPieces = nearPieces(row, col, board, lastCell.state, X, 1);
-		int orizzontalPieces = nearPieces(row, col, board, lastCell.state, X, 2);
-		int diagonalPieces = nearPieces(row, col, board, lastCell.state, X, 3);
-		int antiDiagonalPieces = nearPieces(row, col, board, lastCell.state, X, 4);
-		
-		score = verticalPieces + orizzontalPieces + diagonalPieces + antiDiagonalPieces;
-		*/
-
-		/*
-		//buono ma gia' calcolato da un'altra funzione
-		// Aggiungi un bonus per le colonne centrali
-		int centerCol = N / 2;
-		if (col == centerCol) {
-			score += 2;
-		} else if (col == centerCol - 1 || col == centerCol + 1) {
-			score += 1;
-		}
-		*/
-
-		/*
-		//non capisco perche' le righe sotto dovrebbero essere meglio, se effettivamente danno vantaggio scommentate
-		// Aggiungi un bonus per le righe inferiori
-		int bottomRow = M - 1;
-		if (row == bottomRow) {
-			score += 2;
-		} else if (row == bottomRow - 1) {
-			score += 1;
-		}
-		*/
-/* 
-		// Aggiungi un bonus per le sequenze di pezzi gia' presenti sul tabellone
-		int sequenceBonus = getSequenceBonus(board, lastCell.state);
-		score += sequenceBonus;
-
-		// Aggiungi un bonus per le opportunita' di creare blocchi
-		int blockBonus = getBlockBonus(board, lastCell.state);
-		score += blockBonus;
-
-		//                 succoso
-		// Aggiungi un bonus per le opportunita' di creare sequenze
-		int sequenceOpportunityBonus = getSequenceOpportunityBonus(board, lastCell.state);
-		score += sequenceOpportunityBonus;
-
-		// Aggiungi un bonus per le colonne con pochi pezzi
-		int emptyColumns = getEmptyColumns(board);
-		int emptyColumnBonus = emptyColumns * 2;
-		score += emptyColumnBonus;
-
-		// Aggiungi un bonus per le colonne con pezzi dello stesso colore
-		int sameColorColumns = getSameColorColumns(board, lastCell.state);
-		int sameColorColumnBonus = sameColorColumns * 2;
-		score += sameColorColumnBonus;
-
-		/*
-		// Aggiungi un bonus per le colonne con pezzi dell'avversario
-		int opponentColumns = getOpponentColumns(board, lastCell.state);
-		int opponentColumnBonus = opponentColumns * 2;
-		score += opponentColumnBonus;
-		*/
-	/*
-		// Aggiungi un bonus per le righe con pezzi dello stesso colore
-		int sameColorRows = getSameColorRows(board, lastCell.state);
-		int sameColorRowBonus = sameColorRows * 2;
-		score += sameColorRowBonus;
-
-		/*
-		// Aggiungi un bonus per le righe con pezzi dell'avversario
-		int opponentRows = getOpponentRows(board, lastCell.state);
-		int opponentRowBonus = opponentRows * 2;
-		score += opponentRowBonus;
-		*/
-
-		/*
-		// Aggiungi un bonus per le celle vicine ai bordi del tabellone
-		int edgeBonus = getEdgeBonus(board, lastCell);
-		score += edgeBonus;
-		*/
-
-		/*
-		//non e' male ma fa getMobilityBonus fa lo stesso calcolo ma considerando le celle vuote, mentre questa calcola solo le celle nostre
-		//ma in realta' noi preferiamo avere tante pedine amiche vicino, perche' aumenta la probabilita' di fare blocchi/lunghe sequenze
-		//quindi il calcolo di getMobilityBonus ci sta, questo ci penalizza
-		// Aggiungi un bonus per i pezzi isolati
-		int isolatedPiecesBonus = getIsolatedPiecesBonus(board, lastCell);
-		score += isolatedPiecesBonus;
-		*/
-		
-		/*
-		// Aggiungi un bonus per i pezzi in angoli o bordi
-		int cornerAndEdgePiecesBonus = getCornerAndEdgePiecesBonus(board, lastCell);
-		score += cornerAndEdgePiecesBonus;
-		*/
-/* 
-		//sbrodolone
-		// Aggiungi un bonus per la mobilita'
-		int mobilityBonus = getMobilityBonus(board, lastCell);
-		score += mobilityBonus;
-
-		/*
-		-----------
-		// DA SCOMMENTARE SCEGLIENDO BENE LE POSIZIONI CHIAVE
-		----------
-		// Aggiungi un bonus per la presenza di pezzi in posizioni chiave
-		int keyPiecesBonus = getKeyPiecesBonus(board, lastCell.state);
-		score += keyPiecesBonus;
-		*/
-
-		/*
-		//carino ma finisce per favorire posizioni vicino a pedine avversiarie solo per il fatto di esistere
-		// Aggiungi un bonus per la presenza di pezzi che possono catturare o bloccare
-		int captureAndBlockBonus = getCaptureAndBlockBonus(board, lastCell.state);
-		score += captureAndBlockBonus;
-		*/
-	/* 
-		// Aggiungi un bonus per la presenza di pezzi che possono vincere la partita
-		int winningPiecesBonus = getWinningPiecesBonus(board, lastCell.state);
-		score += winningPiecesBonus;
-
-		return score;
-	}
-
-
-	 */
-	/*
-	 	private float evaluationFunction(CXBoard board) {
-		CXCell lastCell = board.getLastMove();
-		int row = lastCell.i;
-		int col = lastCell.j;
-		int score = 0;
-
-		// Aggiungi un bonus per le sequenze di pezzi gia' presenti sul tabellone
-		int sequenceBonus = getSequenceBonus(board, lastCell.state);
-		score += sequenceBonus;
-
-		// Aggiungi un bonus per le opportunita' di creare blocchi
-		int blockBonus = getBlockBonus(board, lastCell.state);
-		score += blockBonus;
-
-		// Aggiungi un bonus per le opportunita' di creare sequenze
-		int sequenceOpportunityBonus = getSequenceOpportunityBonus(board, lastCell.state);
-		score += sequenceOpportunityBonus;
-
-		// Aggiungi un bonus per le colonne con pochi pezzi
-		int emptyColumns = getEmptyColumns(board);
-		int emptyColumnBonus = emptyColumns * 2;
-		score += emptyColumnBonus;
-
-		// Aggiungi un bonus per le colonne con pezzi dello stesso colore
-		int sameColorColumns = getSameColorColumns(board, lastCell.state);
-		int sameColorColumnBonus = sameColorColumns * 2;
-		score += sameColorColumnBonus;
-
-		// Aggiungi un bonus per le righe con pezzi dello stesso colore
-		int sameColorRows = getSameColorRows(board, lastCell.state);
-		int sameColorRowBonus = sameColorRows * 2;
-		score += sameColorRowBonus;
-		
-		// Aggiungi un bonus per la mobilita'
-		int mobilityBonus = getMobilityBonus(board, lastCell);
-		score += mobilityBonus;
-
-		/*
-		-----------
-		// DA SCOMMENTARE SCEGLIENDO BENE LE POSIZIONI CHIAVE
-		----------
-		// Aggiungi un bonus per la presenza di pezzi in posizioni chiave
-		int keyPiecesBonus = getKeyPiecesBonus(board, lastCell.state);
-		score += keyPiecesBonus;
-		*/
 /*
-		// Aggiungi un bonus per la presenza di pezzi che possono vincere la partita
-		int winningPiecesBonus = getWinningPiecesBonus(board, lastCell.state);
-		score += winningPiecesBonus;
+	public LinkedList<Combo> calculateAllCombos(LinkedList<Combo> comboList, CXCellState myState, CXBoard board, LinkedList<CXCell> freeWinningCells, boolean halfBoardFull) {
+		CXCell[] markedCells = board.getMarkedCells();
 
-		return score;
-	}
+		Direction[] directions = {  Direction.Vertical,
+									Direction.Horizontal,
+									Direction.Diagonal, 
+									Direction.AntiDiagonal};
 
+		for(CXCell cell : markedCells) {
+			for(Direction direction : directions) {
+				if(cell.state == myState) {
+					if(findCombo(comboList, cell, direction) == null) {
+						comboList.add(createCombo(board, cell, direction, freeWinningCells, halfBoardFull));
+						
+					}
+				}
+			}
+		}
+		return comboList;
+	} 
 	
-	/*	Questa funzione calcola il bonus per le sequenze di pezzi dello stesso stato (1 o 2) che passano per l'ultima mossa effettuata sul tabellone. Per ogni direzione (orizzontale, verticale, diagonale e antidiagonale), la funzione conta il numero di pezzi dello stesso stato consecutivi a partire dalla cella dell'ultima mossa e in quella direzione. Se il numero di pezzi consecutivi e' maggiore o uguale a X (la lunghezza della sequenza richiesta per vincere), allora la funzione aggiunge al bonus il quadrato del numero di pezzi consecutivi. In questo modo, le sequenze piu' lunghe ricevono un bonus maggiore rispetto alle sequenze piu' corte. Infine, la funzione restituisce il totale dei bonus per tutte le direzioni. */
-	/*
-	private int getSequenceBonus(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {-1, 1}}; // direzioni orizzontale, verticale, diagonale e antidiagonale
-		for (int[] dir : directions) {
-			int row = board.getLastMove().i;
-			int col = board.getLastMove().j;
-			int count = 0;
-			while (row >= 0 && row < M && col >= 0 && col < board.N && board.cellState(row, col) == state) {
-				count++;
-				row += dir[0];
-				col += dir[1];
-			}
-			if (count >= X) {
-				bonus += count * count;
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le posizioni che bloccano le sequenze di pezzi dell'avversario che passano per l'ultima mossa effettuata sul tabellone. Per ogni direzione (orizzontale, verticale, diagonale e antidiagonale), la funzione conta il numero di pezzi dell'avversario consecutivi a partire dalla cella dell'ultima mossa e in quella direzione. Se la cella successiva alla sequenza di pezzi dell'avversario e' vuota, allora la funzione aggiunge al bonus il quadrato del numero di pezzi dell'avversario consecutivi. In questo modo, le posizioni che bloccano sequenze piu' lunghe dell'avversario ricevono un bonus maggiore rispetto alle posizioni che bloccano sequenze piu' corte. Infine, la funzione restituisce il totale dei bonus per tutte le direzioni. */
-	/*
-	private int getBlockBonus(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {-1, 1}}; // direzioni orizzontale, verticale, diagonale e antidiagonale
-		for (int[] dir : directions) {
-			int row = board.getLastMove().i;
-			int col = board.getLastMove().j;
-			int count = 0;
-			while (row >= 0 && row < board.M && col >= 0 && col < board.N && board.cellState(row, col) != CXCellState.FREE) {
-				count++;
-				row += dir[0];
-				col += dir[1];
-			}
-			if (row >= 0 && row < board.M && col >= 0 && col < board.N && board.cellState(row, col)== CXCellState.FREE) {
-				bonus += count * count;
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le posizioni che permettono di creare sequenze di pezzi dello stesso stato (1 o 2) che passano per l'ultima mossa effettuata sul tabellone. Per ogni direzione (orizzontale, verticale, diagonale e antidiagonale), la funzione conta il numero di pezzi dello stesso stato consecutivi a partire dalla cella dell'ultima mossa e in quella direzione. Se la cella successiva alla sequenza di pezzi dello stesso stato e' vuota, allora la funzione cerca di contare il numero di pezzi dello stesso stato consecutivi a partire dalla cella successiva e in quella direzione. Se il numero di pezzi consecutivi piu' il numero di pezzi consecutivi nella cella successiva e' maggiore o uguale a X (la lunghezza della sequenza richiesta per vincere), allora la funzione aggiunge al bonus il quadrato del numero di pezzi dello stesso stato consecutivi nella cella successiva. In questo modo, le posizioni che permettono di creare sequenze piu' lunghe ricevono un bonus maggiore rispetto alle posizioni che permettono di creare sequenze piu' corte. Infine, la funzione restituisce il totale dei bonus per tutte le direzioni. */
-	/*
-	private int getSequenceOpportunityBonus(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {-1, 1}}; // direzioni orizzontale, verticale, diagonale e antidiagonale
-		for (int[] dir : directions) {
-			int row = board.getLastMove().i;
-			int col = board.getLastMove().j;
-			int count = 0;
-			while (row >= 0 && row < board.M && col >= 0 && col < board.N && board.cellState(row, col) == state) {
-				count++;
-				row += dir[0];
-				col += dir[1];
-			}
-			int newRow = row + dir[0];
-			int newCol = col + dir[1];
-			if (newRow >= 0 && newRow < board.M && newCol >= 0 && newCol < board.N && board.cellState(newRow, newCol) == CXCellState.FREE) {
-				int newCount = 1;
-				newRow += dir[0];
-				newCol += dir[1];
-				while (newRow >= 0 && newRow < board.M && newCol >= 0 && newCol < board.N && board.cellState(newRow, newCol) == state) {
-					newCount++;
-					newRow += dir[0];
-					newCol += dir[1];
-				}
-				if (count + newCount >= X) {
-					bonus += newCount * newCount;
-				}
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le colonne che hanno pochi pezzi. La funzione conta il numero di colonne vuote sul tabellone e calcola il bonus come 2^(n-1), dove n e' il numero di colonne vuote. In questo modo, le colonne con meno pezzi ricevono un bonus maggiore rispetto alle colonne con piu' pezzi. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getEmptyColumns(CXBoard board) {
-		int bonus = 0;
-		int emptyColumns = 0;
-		for (int col = 0; col < board.N; col++) {
-			if (board.cellState(0, col) == CXCellState.FREE) {
-				emptyColumns++;
-			}
-		}
-		if (emptyColumns > 0) {
-			bonus = (int) Math.pow(2, emptyColumns - 1);
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le colonne che contengono pezzi dello stesso colore dello stato passato come parametro. La funzione conta il numero di pezzi dello stesso colore in ogni colonna e calcola il bonus come 2^(n-1), dove n e' il numero di pezzi dello stesso colore nella colonna. In questo modo, le colonne con piu' pezzi dello stesso colore ricevono un bonus maggiore rispetto alle colonne con meno pezzi dello stesso colore. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getSameColorColumns(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		for (int col = 0; col < board.N; col++) {
-			int count = 0;
-			for (int row = 0; row < board.M; row++) {
-				if (board.cellState(row, col) == state) {
-					count++;
-				}
-			}
-			if (count > 0) {
-				bonus += (int) Math.pow(2, count - 1);
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le righe che contengono pezzi dello stesso colore dello stato passato come parametro. La funzione conta il numero di pezzi dello stesso colore in ogni riga e calcola il bonus come 2^(n-1), dove n e' il numero di pezzi dello stesso colore nella riga. In questo modo, le righe con piu' pezzi dello stesso colore ricevono un bonus maggiore rispetto alle righe con meno pezzi dello stesso colore. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getSameColorRows(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		for (int row = 0; row < board.M; row++) {
-			int count = 0;
-			for (int col = 0; col < board.N; col++) {
-				if (board.cellState(row, col) == state) {
-					count++;
-				}
-			}
-			if (count > 0) {
-				bonus += (int) Math.pow(2, count - 1);
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per le righe che contengono pezzi dell'avversario (cioe' dello stato opposto a quello passato come parametro). La funzione conta il numero di pezzi dell'avversario in ogni riga e calcola il bonus come 2^(n-1), dove n e' il numero di pezzi dell'avversario nella riga. In questo modo, le righe con piu' pezzi dell'avversario ricevono un bonus maggiore rispetto alle righe con meno pezzi dell'avversario. Infine, la funzione restituisce il bonus calcolato */
-	/*
-	private int getOpponentRows(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		CXCellState opponentState = (state == CXCellState.P1) ? CXCellState.P2 : CXCellState.P1; // stato dell'avversario
-		for (int row = 0; row < board.M; row++) {
-			int count = 0;
-			for (int col = 0; col < board.N; col++) {
-				if (board.cellState(row, col) == opponentState) {
-					count++;
-				}
-			}
-			if (count > 0) {
-				bonus += (int) Math.pow(2, count - 1);
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per la mobilita', cioe' il numero di posizioni vuote adiacenti alla cella dell'ultima mossa. La funzione controlla se ci sono posizioni vuote nelle otto direzioni adiacenti alla cella dell'ultima mossa e assegna un bonus di 1 punto per ogni posizione vuota trovata. In questo modo, le posizioni che consentono di avere piu' opzioni per la mossa successiva ricevono un bonus maggiore. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getMobilityBonus(CXBoard board, CXCell lastMove) {
-		int bonus = 0;
-		CXCellState state = lastMove.state;
-		int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
-		for (int[] dir : directions) {
-			int r = lastMove.i + dir[0];
-			int c = lastMove.j + dir[1];
-			if (r >= 0 && r < board.M && c >= 0 && c < board.N && board.cellState(r, c) == CXCellState.FREE) {
-				bonus++;
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*Questa funzione calcola il bonus per la presenza di pezzi in posizioni chiave del tabellone. La funzione controlla se ci sono pezzi dello stato passato come parametro in alcune posizioni chiave del tabellone e assegna un bonus di 2 punti per ogni posizione chiave in cui e' presente un pezzo dello stato. In questo modo, le posizioni chiave del tabellone ricevono un bonus maggiore rispetto alle altre posizioni. Le posizioni chiave utilizzate in questo esempio sono {0, 3}, {1, 2}, {1, 3}, {1, 4}, ma puoi modificare questa lista a seconda delle tue esigenze. Infine, la funzione restituisce il bonus calcolato */
-	/*
-	private int getKeyPiecesBonus(CXBoard board) {
-		int bonus = 0;
-		int[][] keyPositions = getKeyPositions(board.M, board.N, board.X);
-		for (int[] pos : keyPositions) {
-			if (board.cellState(pos[0], pos[1]) == board.getLastMove().state) {
-				bonus += 2;
-			}
-		}
-		return bonus;
-	}
-	*/
-	/*
-	private int[][] getKeyPositions(int M, int N, int X) {
-		int[][] keyPositions = new int[M * N][2];
-		int index = 0;
-
-		// Check horizontal key positions
-		for (int row = 0; row < M; row++) {
-			for (int col = 0; col <= N - X; col++) {
-				for (int i = 0; i < X; i++) {
-					keyPositions[index][0] = row;
-					keyPositions[index][1] = col + i;
-					index++;
-				}
-			}
-		}
-
-		// Check vertical key positions
-		for (int row = 0; row <= M - X; row++) {
-			for (int col = 0; col < N; col++) {
-				for (int i = 0; i < X; i++) {
-					keyPositions[index][0] = row + i;
-					keyPositions[index][1] = col;
-					index++;
-				}
-			}
-		}
-
-		// Check diagonal key positions (top-left to bottom-right)
-		for (int row = 0; row <= M - X; row++) {
-			for (int col = 0; col <= N - X; col++) {
-				for (int i = 0; i < X; i++) {
-					keyPositions[index][0] = row + i;
-					keyPositions[index][1] = col + i;
-					index++;
-				}
-			}
-		}
-
-		// Check diagonal key positions (top-right to bottom-left)
-		for (int row = 0; row <= M - X; row++) {
-			for (int col = X - 1; col < X; col++) {
-				for (int i = 0; i < X; i++) {
-					keyPositions[index][0] = row + i;
-					keyPositions[index][1] = col - i;
-					index++;
-				}
-			}
-		}
-
-		return keyPositions;
-	}
-
-	*/
-	/*Questa funzione calcola il bonus per i pezzi vincenti, cioe' i pezzi che fanno parte di una sequenza vincente di almeno 4 pezzi dello stesso colore. La funzione controlla se ci sono almeno 4 pezzi dello stato passato come parametro in una qualsiasi delle otto direzioni adiacenti alla cella dell'ultima mossa e assegna un bonus pari al numero di pezzi vincenti trovati. In questo modo, i pezzi che fanno parte di una sequenza vincente ricevono un bonus maggiore rispetto agli altri pezzi. Infine, la funzione restituisce il bonus calcolato. */
-	/*
-	private int getWinningPiecesBonus(CXBoard board, CXCellState state) {
-		int bonus = 0;
-		int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
-		for (int[] dir : directions) {
-			int count = 0;
-			int r = board.getLastMove().i + dir[0];
-			int c = board.getLastMove().j + dir[1];
-			while (r >= 0 && r < board.M && c >= 0 && c < board.N && board.cellState(r, c) == state) {
-				count++;
-				r += dir[0];
-				c += dir[1];
-			}
-			if (count >= 3) {
-				bonus += count; // bonus per pezzi vincenti
-			}
-		}
-		return bonus;
-	}
-	*/
-	/* 
-	public void addHash(CXBoard board, Float value){
-		String board = "";
-		CXCell[] L = board.getMarkedCells(); 
-		for(CXCell i : L){
-			board += i.i;
-			board += i.j;
-		}
-		try{
-			board = hash(board);
-			transpositionTable.put(board, value);
-			System.err.println(board);
-		} catch(Exception e){
-			System.err.println("Errore nell'aggiunta della board alla transposition table");
-		}
-	}
-
-
-	public String hash(String input) throws Exception {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-        BigInteger number = new BigInteger(1, hash);
-        StringBuilder hexString = new StringBuilder(number.toString(16));
-        while (hexString.length() < 32) {
-            hexString.insert(0, '0');
-        }
-        return hexString.toString();
-    }
-	*/
-	
-
+*/
