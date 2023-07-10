@@ -1,4 +1,4 @@
-package connectx.RebarbaroHashish;
+package connectx.RebarbaroHashishBuono;
 
 import connectx.CXBoard;
 import connectx.CXCell;
@@ -17,7 +17,7 @@ import java.util.Comparator;
 /*
  * IncantesimoClonazione e' una classe che permette di memorizzare le mosse valutate durante l'esplorazione
  * Esse vengono salvate nella HashMap map, che ha come chiave un long che rappresenta l'hash della board
- * e come valore un oggetto di tipo NodeData che contiene la mossa valutata e il suo valore, oltre 
+ * e come valore un oggetto di tipo Mongolfiera che contiene la mossa valutata e il suo valore, oltre 
  * ad altri parametri utili per la valutazione e l'esplorazione.
  * 
  * al momento sono presenti due metodi per gestire le chiavi:
@@ -28,7 +28,7 @@ import java.util.Comparator;
  */
 
 public class IncantesimoClonazione {
-    private HashMap<Long, NodeData> map;
+    private HashMap<Long, Mongolfiera> map;
     private int BOARD_COL_SIZE;
     private int BOARD_ROW_SIZE;
     private long[][] ZOBRIST_TABLE;
@@ -43,7 +43,7 @@ public class IncantesimoClonazione {
      * Costruttore
      */
     public IncantesimoClonazione(int M, int N) {
-        map = new HashMap<Long, NodeData>();
+        map = new HashMap<Long, Mongolfiera>();
         BOARD_ROW_SIZE = M;
         BOARD_COL_SIZE = N;
         ZOBRIST_TABLE = new long[BOARD_ROW_SIZE][BOARD_COL_SIZE];
@@ -59,9 +59,9 @@ public class IncantesimoClonazione {
     /**
      * Aggiunge una board alla HashMap map
      * @param board
-     * @param NodeData
+     * @param mongolfiera
      */
-    public void addBoard(CXBoard board, NodeData gameState) {
+    public void addBoard(CXBoard board, Mongolfiera gameState) {
         long hash = getBoardHash(board);
         if(map.containsKey(hash)){
             map.replace(hash, gameState);
@@ -81,7 +81,7 @@ public class IncantesimoClonazione {
      */
     public void addBoard(CXBoard board, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove){
         long hash = getBoardHash(board);
-        NodeData newGameState =  new NodeData(board, score, roundMarkedCell, maximizingPlayer, startingMove);
+        Mongolfiera newGameState =  new Mongolfiera(board, score, roundMarkedCell, maximizingPlayer, startingMove);
         if(map.containsKey(hash)){
             map.replace(hash, newGameState);
             //System.out.println(" Sostituita board" + " score: " + score); 
@@ -92,11 +92,11 @@ public class IncantesimoClonazione {
     }
 
     /**
-     * Restituisce la NodeData associata alla board passata come parametro
+     * Restituisce la Mongolfiera associata alla board passata come parametro
      * @param board
-     * @return NodeData
+     * @return Mongolfiera
      */
-    public NodeData getNodeData(CXBoard board) {
+    public Mongolfiera getMongolfiera(CXBoard board) {
         long hash = getBoardHash(board);
         if(!map.containsKey(hash)){
             return null;
@@ -112,10 +112,12 @@ public class IncantesimoClonazione {
      */
     public long getBoardHash(CXBoard board) {
         long hash = EMPTY_BOARD_HASH;
-        CXCell[] markedCells = board.getMarkedCells();
+        try{
+                CXCell[] markedCells = board.getMarkedCells();
         for(CXCell i : markedCells){
             hash ^= ZOBRIST_TABLE[i.i][i.j];
         }
+        }catch(Exception e){ System.out.println("ArrayIndex nel getBoard");}
         return hash;
     }
 
@@ -134,19 +136,19 @@ public class IncantesimoClonazione {
      * 
      * @return maxValue
      */
-    public float getChildrenScore(CXBoard board, List<NodeData> L, boolean maximizingPlayer,int roundMarkedCell){
+    public float getChildrenScore(CXBoard board, List<Mongolfiera> L, boolean maximizingPlayer,int roundMarkedCell){
         float maxScore = maximizingPlayer ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
         float score;
         try{
         Integer[] availableColumns = board.getAvailableColumns();
-        NodeData NodeData;
+        Mongolfiera mongolfiera;
         for(int i : availableColumns){
             board.markColumn(i);
             long key = getBoardHash(board);
             if(map.containsKey(key)){
-                NodeData = map.get(key);
+                mongolfiera = map.get(key);
                 if(map.get(key).markedCells == roundMarkedCell){
-                    score = NodeData.score;
+                    score = mongolfiera.score;
                     if(maximizingPlayer)
                         maxScore = Math.max(score, maxScore);
                     else
@@ -154,13 +156,13 @@ public class IncantesimoClonazione {
                 }
                 else{
                     /**
-                     * Inserisco una NodeData nella lista
+                     * Inserisco una mongolfiera nella lista
                      * e la ordino in base al suo score
                      */
-                    L.add(NodeData);
-                    Collections.sort(L, new Comparator<NodeData>() {
+                    L.add(mongolfiera);
+                    Collections.sort(L, new Comparator<Mongolfiera>() {
                         @Override
-                        public int compare(NodeData m1, NodeData m2) {
+                        public int compare(Mongolfiera m1, Mongolfiera m2) {
                             return -Float.compare(m1.score, m2.score);
                         }
                     });
@@ -222,7 +224,7 @@ public class IncantesimoClonazione {
 
 
     /**
-     * Crea una nuova NodeData
+     * Crea una nuova Mongolfiera
      * @param board
      * @param col
      * @param score
@@ -230,8 +232,8 @@ public class IncantesimoClonazione {
      * @param maximizingPlayer
      * @return
      */
-    public NodeData createNodeData(CXBoard board, int col, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove){
-        NodeData NodeData = new NodeData(board, score, col, maximizingPlayer, startingMove);
-        return NodeData;
+    public Mongolfiera createMongolfiera(CXBoard board, int col, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove){
+        Mongolfiera mongolfiera = new Mongolfiera(board, score, col, maximizingPlayer, startingMove);
+        return mongolfiera;
     }
 }

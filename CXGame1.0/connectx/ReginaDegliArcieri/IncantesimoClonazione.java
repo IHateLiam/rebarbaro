@@ -1,4 +1,4 @@
-package connectx.RebarbaroHashish;
+package connectx.ReginaDegliArcieri;
 
 import connectx.CXBoard;
 import connectx.CXCell;
@@ -235,3 +235,4 @@ public class IncantesimoClonazione {
         return NodeData;
     }
 }
+ 

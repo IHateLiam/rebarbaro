@@ -1,11 +1,7 @@
-package connectx.RebarbaroHashish;
+package connectx.ReginaDegliArcieri;
 
-import java.util.TreeSet;
 import java.util.LinkedList;
 
-import connectx.CXPlayer;
-import connectx.CXBoard;
-import connectx.CXGameState;
 import connectx.CXCell;
 import connectx.CXCellState;
 
@@ -248,3 +244,4 @@ public class Combo {
 
 }
 
+ 

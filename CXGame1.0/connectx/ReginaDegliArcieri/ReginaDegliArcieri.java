@@ -1,4 +1,4 @@
-package connectx.RebarbaroHashish;
+package connectx.ReginaDegliArcieri;
 
 import connectx.CXPlayer;
 import connectx.CXBoard;
@@ -6,7 +6,6 @@ import connectx.CXGameState;
 import connectx.CXCell;
 import connectx.CXCellState;
 
-import java.util.TreeSet;
 import java.util.Random;
 import java.util.Arrays;
 import java.util.List;
@@ -14,13 +13,9 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 
-import java.util.HashMap;
-import java.security.MessageDigest;
-import java.nio.charset.StandardCharsets;
-import java.math.BigInteger;
 
 
-public class RebarbaroHashish implements CXPlayer {
+public class ReginaDegliArcieri implements CXPlayer {
     private Random rand;
 	private CXGameState myWin;
 	private CXGameState yourWin;
@@ -36,38 +31,32 @@ public class RebarbaroHashish implements CXPlayer {
 	private boolean debugMode;
 
 	//variabili hash table
-	private IncantesimoClonazione transpositionTable;
+	//private IncantesimoClonazione transpositionTable;
 	private int markedCells;
 	private CXCell lastMove; 
 	
 	//variabili combo
 	private LinkedList<Combo> myComboList;
 	private LinkedList<Combo> advComboList;
-	//private LinkedList<CXCell> myWinningFreeCells;
-	//private LinkedList<CXCell> advWinningFreeCells;
-		
+
+	//numero di celle tale da determinare che siamo a meta' partita
+	//serve piu' che altro a non doverla calcolare tutte le volte
 	private int totalBoardCells;    
-	private int halfGameCells;      //numero di celle tale da determinare che siamo a meta' partita
-									//serve piu' che altro a non doverla calcolare tutte le volte
+	private int halfGameCells;      
 	
 	//variabili per la variazione dell'altezza dell'albero di esplorazione delle mosse
 	private int timeForColumn;
 	private int DECISIONTREEDEPTH;
 
-	private Accampamento accampamento;
 
     /*Default empty constructor*/
-    public RebarbaroHashish() {
+    public ReginaDegliArcieri() {
 
     }
 
-	private void checktime() throws TimeoutException {
-		if ((System.currentTimeMillis() - START) / 1000.0 >= TIMEOUT * (99.0 / 100.0))
-			throw new TimeoutException();
-	}
 
 	public String playerName() {
-		return "RebarbaroHashish";
+		return "ReginaDegliArcieri";
 	}
 
     public void initPlayer(int M, int N, int X, boolean first, int timeout_in_secs) {
@@ -88,7 +77,7 @@ public class RebarbaroHashish implements CXPlayer {
 		this.myComboList  = new LinkedList<Combo>();
 		this.advComboList = new LinkedList<Combo>();
 
-		this.transpositionTable = new IncantesimoClonazione(M, N);
+		//this.transpositionTable = new IncantesimoClonazione(M, N);
 
 		this.DECISIONTREEDEPTH = 2;
 
@@ -99,7 +88,6 @@ public class RebarbaroHashish implements CXPlayer {
 		debugMode = false;
 		// (---)   (---)   (---)   (---)   (---)   (---)   
 
-		accampamento = new Accampamento(M, N, 2 << 20);
     }
 
 	/**
@@ -121,7 +109,7 @@ public class RebarbaroHashish implements CXPlayer {
 		lastMove = board.getLastMove();
 		
 		float[] columnScores = new float[N];
-		score = organizeColumns(availableColumns, board, true);
+		//score = organizeColumns(availableColumns, board, true);
 
 		int randomEventualChoice = availableColumns.get(0);   //calcola gia' la scelta casuale caso mai andasse in timeout
 
@@ -130,30 +118,9 @@ public class RebarbaroHashish implements CXPlayer {
 			refreshCombos(advComboList, board, board.getLastMove(), advCellState, true);
 		
 		//non uso le originali perche' il minimax fa delle "ipotesi". non voglio che le ipotesi vengano salvate: la lista diventerebbe enorme e non controllabile
-		
 		LinkedList<Combo> myComboListCopy = new LinkedList<Combo>(myComboList);
 		LinkedList<Combo> advCombosCopy = new LinkedList<Combo>(advComboList);
-	/* 
-		int first = availableColumns.remove(0);	
 
-		long firstStart = System.currentTimeMillis();
-		score  = minimax(board, depth, first, Integer.MIN_VALUE, Integer.MAX_VALUE, false, myComboListCopy, advCombosCopy); 
-		long endTime = System.currentTimeMillis() - firstStart;
-		//System.out.println("endTime: " + endTime + "(DECISIONTREEDEPTH: " + DECISIONTREEDEPTH + ")");   //DEBUGG
-
-		int remaining = availableColumns.size();
-		if(endTime*remaining / 1000.0f >= TIMEOUT) {
-			//System.out.println("Timeout too small or depth too big (DECISIONTREEDETPH: "+ DECISIONTREEDEPTH-- +") ");    //DEBUGG
-		}
-
-		if(!halfBoardFull) {
-			score += 0.01;
-			score *= columns_value[first];
-		}
-
-		bestScore = score;
-		bestCol = first;
-*/
 		for (int col : availableColumns) {
 			try {
 				
@@ -163,14 +130,12 @@ public class RebarbaroHashish implements CXPlayer {
 				}
 
 				depth = DECISIONTREEDEPTH;
-				float timeForColumn = System.currentTimeMillis();
+				long columnMinmaxTime = System.currentTimeMillis();
 
 				score = minimax(board, depth, col, Integer.MIN_VALUE, Integer.MAX_VALUE, false, myComboListCopy, advCombosCopy, markedCells); //minimax
-				//per adesso le combo le passiamo come vuote, volendo si potrebbe fare che il minimax alla fine ti ritorna una lista cosi' ce l'hai buona per dopo bho
-				//magari prima del return di selectColumn ci salviamo nei campi di rebarbaro le combo di rebarbaro e dell'avversario, aggiungendoci l'ultima mossa
 
 				if(!halfBoardFull) {    //voglio che le colonne centrali le scelga solo all'inizio della partita
-					score += 0.01; //se e' tutto a 0, la moltiplicazione dei valori delle colonne viene annullata
+					score += 0.01; 	//se e' tutto a 0, la moltiplicazione dei valori delle colonne viene annullata
 					score *= columns_value[col];
 				}
 
@@ -184,20 +149,18 @@ public class RebarbaroHashish implements CXPlayer {
 					columnScores[col] = score;    //gia' moltiplicato per il columns_value[i]
 				}
 
-				if(System.currentTimeMillis() - timeForColumn < (timeForColumn/3))
+				if(System.currentTimeMillis() - columnMinmaxTime < (timeForColumn/3))
 					DECISIONTREEDEPTH++;
 				else if(DECISIONTREEDEPTH > 2)
-					DECISIONTREEDEPTH -= 2;
+					DECISIONTREEDEPTH--;
 
-				if (System.currentTimeMillis() - start > (TIMEOUT+8) * 10000) { //se ho superato il timeout
+				if (System.currentTimeMillis() - start > (TIMEOUT+8) * 9700) { //se ho superato il timeout
 					throw new TimeoutException(); //lancio un'eccezione
 				}
 			} catch (TimeoutException e) {
-				System.err.println("Timeout!!! minimax ritorna -1 in selectColumn"); //debug
+				//System.err.println("Timeout!!! minimax ritorna -1 in selectColumn"); //debug
 				break;
 			}
-
-		//System.out.println("fatto col n." + col + ", DECISIONTREEDEPTH: " + DECISIONTREEDEPTH);    //DEBUGG
 
 		}
 
@@ -260,18 +223,6 @@ public class RebarbaroHashish implements CXPlayer {
 		//tempo
 		long startTime = System.currentTimeMillis();
 		
-		/*
-		long hash = accampamento.getHash(board);
-		float temp = accampamento.searchTroop(hash, numOfMarkedCellsStart, alpha, beta);
-		//if(temp != Integer.MAX_VALUE) {
-			if(false) {    //per adesso non voglio entrare in questo if
-			System.err.print("HO RITORNATO " + temp + "dall'hash, maxPl: " + maximizingPlayer + "\n");   //DEBUGG
-			System.err.print("(sono nella mossa " + firstMove + "a depth = " + depth + ")\n");
-			return temp;
-		}
-		*/
-
-
 		float score;
 		List<Integer> availableColumns = new ArrayList<>(Arrays.asList(board.getAvailableColumns())); //lista delle colonne disponibili
 		CXGameState state = board.markColumn(firstMove); // marco la prima mossa
@@ -293,15 +244,17 @@ public class RebarbaroHashish implements CXPlayer {
 		int numOfMarkedCells = board.numOfMarkedCells();   //lo uso per l'evaluate della vittoria/sconfitta come modificatore del punteggio per evitare che la somma delle combo con l'avanzare della partita superino il valore della vittoria
 
 
+
 		if (state == myWin) { // se ho vinto
 			if (debugMode) {
 				System.err.print("|won | evaluate: " + (maximizingPlayer ? -(X) * (depth + 1) * 10 : (X) * (depth + 1) * 10) + " ");
 			}
 			score = maximizingPlayer ? -(X) * (depth + 1) * 10 : (X) * (depth + 1) * 10;  
-			transpositionTable.addBoard(board, score, markedCells, maximizingPlayer, lastMove);
 			board.unmarkColumn(); // tolgo la mossa
 			return score;
 			// ritorno 1 se sono il giocatore che sta massimizzando, -1 altrimenti
+
+
 
 
 		} else if (state == yourWin) { // se ha vinto l'avversario
@@ -309,11 +262,11 @@ public class RebarbaroHashish implements CXPlayer {
 				System.err.print("|lost| evaluate: " + (maximizingPlayer ? -(X) * (depth + 1) * 10 : (X) * (depth + 1) * 10) + " ");
 			}
 			score = maximizingPlayer ? -(X) * (depth + 1) * 10 : (X) * (depth + 1) * 10;
-			transpositionTable.addBoard(board, score, markedCells, maximizingPlayer, lastMove);
 			board.unmarkColumn(); // tolgo la mossa
 			return score;
 			// ritorno -1 se sono il giocatore che sta massimizzando, 1 altrimenti
 		}
+
 
 		//aggiorno le liste di combo. mi serve per quando arrivo alla foglia per fare l'evaluate
 		
@@ -335,8 +288,10 @@ public class RebarbaroHashish implements CXPlayer {
 			System.err.print("depth: " + (DECISIONTREEDEPTH - depth) + " "); // debug
 			System.err.print("col: " + firstMove + "\t\t"); // debug
 		}
+
 		 
 
+		//valuto foglia
 		if (depth == 0 || state == CXGameState.DRAW) { // se sono arrivato alla profondita' massima o se ho pareggiato
 			
 			float score_adv_combos = evaluationFunctionCombos(advCombos);
@@ -344,7 +299,6 @@ public class RebarbaroHashish implements CXPlayer {
 			
 			score = maximizingPlayer ? - (score_adv_combos - score_me_combos) : score_me_combos - score_adv_combos;
 			score = score / numOfMarkedCells;
-			transpositionTable.addBoard(board, score, markedCells, maximizingPlayer, lastMove);
 			
 			if (debugMode) {
 				System.err.print("evaluate: " + score + " (my combos score: " + score_me_combos + ", adv combos score: " + score_adv_combos + " ) ");
@@ -355,7 +309,7 @@ public class RebarbaroHashish implements CXPlayer {
 		}
 
 		availableColumns = Arrays.asList(board.getAvailableColumns()); //aggiorno la lista delle colonne disponibil
-		score = organizeColumns(availableColumns, board, maximizingPlayer);
+		//score = organizeColumns(availableColumns, board, maximizingPlayer);
 
 		if (maximizingPlayer) {
 			// Maximize player 1's score
@@ -363,6 +317,7 @@ public class RebarbaroHashish implements CXPlayer {
 			for (int col : availableColumns) {
 
 				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
+					DECISIONTREEDEPTH--;
                     break;
                 }
 				score = minimax(board, depth - 1, col, alpha, beta, false, rebarbaroCombos, advCombos, numOfMarkedCellsStart);
@@ -375,14 +330,11 @@ public class RebarbaroHashish implements CXPlayer {
 				alpha = Math.max(alpha, score);
 				if (beta <= alpha) {
 					// Beta cutoff
-					//accampamento.storeNewTroop(hash, alpha, numOfMarkedCellsStart, Accampamento.Flag.UPPER_BOUND);
 					break;
 				}
 
 			}
-			transpositionTable.addBoard(board, maxScore, markedCells, maximizingPlayer, lastMove);
 			board.unmarkColumn();
-			//accampamento.storeNewTroop(hash, maxScore, numOfMarkedCellsStart, Accampamento.Flag.EXACT);
 			return maxScore;
 
 		} else {
@@ -391,6 +343,7 @@ public class RebarbaroHashish implements CXPlayer {
 			for (int col : availableColumns) {
 
 				if (System.currentTimeMillis() - startTime > timeForColumn) { // check if time is up
+					DECISIONTREEDEPTH--;
                     break;
                 }
 
@@ -404,13 +357,10 @@ public class RebarbaroHashish implements CXPlayer {
 				beta = Math.min(beta, score);
 				if (beta <= alpha) {
 					// Alpha cutoff
-					//accampamento.storeNewTroop(hash, beta, numOfMarkedCellsStart, Accampamento.Flag.UPPER_BOUND);
 					break;
 				}
 			}
-			transpositionTable.addBoard(board, minScore, markedCells, maximizingPlayer, lastMove);
 			board.unmarkColumn();
-			//accampamento.storeNewTroop(hash, minScore, numOfMarkedCellsStart, Accampamento.Flag.EXACT);
 			return minScore;
 		}
 	}
@@ -445,7 +395,6 @@ public class RebarbaroHashish implements CXPlayer {
 		List<NodeData> lastMoveChildren = new ArrayList<NodeData>();
 		float score = 0;
 		try{
-			score = transpositionTable.getChildrenScore(board, lastMoveChildren, maximizingPlayer, markedCells);
 			//System.err.print("Size: " + lastMoveChildren.size() + " ");
 			if(lastMoveChildren.size() > 0){	
 				for(NodeData child : lastMoveChildren){
@@ -774,10 +723,6 @@ public class RebarbaroHashish implements CXPlayer {
 	}
 
 
-
-
-
-
 	public LinkedList<Combo> calculateAllCombos(LinkedList<Combo> comboList, CXCellState myState, CXBoard board) {
 		CXCell[] markedCells = board.getMarkedCells();
 
@@ -809,78 +754,7 @@ public class RebarbaroHashish implements CXPlayer {
 	}
 
 
-	
-	//  ---   combo value con gli heap
-
-
-	/**
-	 * modifica l'array in input riempiendolo con i valori delle combo di comboList
-	 * @param comboList lista di combo
-	 * @param array array di interi
-	 */
-	private void makeComboValuesArray(LinkedList<Combo> comboList, int[] array) {
-		int i = 1;
-		array[0] = -1;  //per la costruzione del minheap array e' piu' comodo che l'elemento 0 non venga usato
-		for(Combo combo : comboList) {
-			array[i] = combo.getValue();
-			i++;
-		}
-	}
-
-	/**
-	 * @param S array heap
-	 * @param c indice dell'ultimo elemento di S (fine dell'heap)
-	 * @param i nodo radice dell'heap
-	 */
-	private void fixHeap(int S[], int c, int i) {
-		int max = 2 * i; // figlio sinistro
-		if (2 * i > c) return;                //se questo nodo non ha figli 
-		if (2 * i + 1 <= c && S[2 * i] < S[2 * i + 1])           //sceglie il maggiore tra figlio destro e sinistro
-			max = 2 * i + 1; // figlio destro
-
-		if (S[i] < S[max]) {                                    //scambia la radice con il figlio maggiore, se necessario 
-			int temp = S[max];                                  
-			S[max] = S[i];
-			S[i] = temp;
-			fixHeap(S, c, max);                            //e richiama la funzione sul sottoalbero del figlio maggiore (adesso in posizione max c'e' la vecchia radice)
-		}
-	}
-
-	/**
-	 * @param S array heap
-	 * @param n lunghezza array
-	 * @param i nodo radice dell'heap
-	 */
-	private void heapify(int S[], int n, int i) {
-		if (i > n) return;
-		heapify(S, n, 2 * i); // crea heap radicato in S[2*i]
-		heapify(S, n, 2 * i + 1); // crea heap radicato in S[2*i+1]
-		fixHeap(S, n, i);
-	}
-
-	/**
-	 * prende le 3 combinazioni con valore piu' alto da comboList e le somma
-	 * @param comboList lista di combo
-	 * @param winningFreeCells lista di caselle vuote vincenti
-	 * @return valore della funzione di valutazione
-	 */
-	public int evaluationFunctionCombos2(LinkedList<Combo> comboList, LinkedList<CXCell> winningFreeCells) {
-		int somma = 0;
-		int n_combos_to_evaluate = 3;
-
-		int[] comboValues = new int[comboList.size() + 1];   //+1 perche' l'elemento 0 non verra' usato
-		makeComboValuesArray(comboList, comboValues);
-		heapify(comboValues, comboList.size(), 1);
-
-		//so che i primi 3 elementi dell'heap sono la radice e i suoi due figli, che sono i 3 elementi maggiori
-		for(int i = 1; i <= n_combos_to_evaluate && i <= comboList.size(); i++) {    //so che l'elemento 0 non e' da utilizzare
-			somma += comboValues[i];
-		}
-		
-
-		return somma;
-	}
-
 }
 	
 
+ 

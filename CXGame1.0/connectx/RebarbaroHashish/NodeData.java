@@ -7,12 +7,12 @@ import connectx.CXCell;
 import java.util.LinkedList;
 
 /**
- * Mongolfiera e' una classe che permette di memorizzare
+ * NodeData e' una classe che permette di memorizzare
  * le mosse valutate durante l'esplorazione
  * 
  * Esse vengono salvate nella HashMap map,
  * che ha come chiave un long che rappresenta l'hash della board
- * e come valore un oggetto di tipo Mongolfiera che contiene la mossa valutata
+ * e come valore un oggetto di tipo NodeData che contiene la mossa valutata
  * 
  * importanti sono i parametri:
  * - score: il valore della mossa
@@ -26,7 +26,7 @@ import java.util.LinkedList;
  *                 utilizzata per verificare se la mossa e' stata valutata
  *                 in un iterazione precedente o meno
  */
-public class Mongolfiera {
+public class NodeData {
     public float score;
     public int column;
     public int depth;
@@ -35,6 +35,7 @@ public class Mongolfiera {
     public int lastMoveI;
     public int lastMoveJ;
     public CXCell startingMove;
+    public boolean maximizingPlayer;
 
 
     /**
@@ -45,19 +46,14 @@ public class Mongolfiera {
      * @param maximizingPlayer
      * @param startingMove
      */
-    public Mongolfiera(CXBoard board, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove) {
+    public NodeData(CXBoard board, float score, int roundMarkedCell, boolean maximizingPlayer, CXCell startingMove) {
         this.score = score;
-        this.depth = 0;
         this.startingMove = startingMove;
         this.markedCell = board.getLastMove();
         this.markedCells = roundMarkedCell;
         this.lastMoveI = markedCell.i;
         this.lastMoveJ = markedCell.j;
         this.column = markedCell.j;
+        this.maximizingPlayer = maximizingPlayer;
     }
-
-    public float getScore(){
-        return score;
-    }
-
 }
