@@ -1,9 +1,7 @@
-package connectx.RebarbaroHashishBuono;
+package connectx.Rebarbaro;
 
 import connectx.CXBoard;
 import connectx.CXCell;
-import connectx.CXGameState;
-import connectx.CXCellState;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -15,7 +13,7 @@ import java.util.Comparator;
 
 
 /*
- * IncantesimoClonazione e' una classe che permette di memorizzare le mosse valutate durante l'esplorazione
+ * Clonazione e' una classe che permette di memorizzare le mosse valutate durante l'esplorazione
  * Esse vengono salvate nella HashMap map, che ha come chiave un long che rappresenta l'hash della board
  * e come valore un oggetto di tipo Mongolfiera che contiene la mossa valutata e il suo valore, oltre 
  * ad altri parametri utili per la valutazione e l'esplorazione.
@@ -27,7 +25,7 @@ import java.util.Comparator;
  * da valutare quale sia piu' performante
  */
 
-public class IncantesimoClonazione {
+public class Clonazione {
     private HashMap<Long, Mongolfiera> map;
     private int BOARD_COL_SIZE;
     private int BOARD_ROW_SIZE;
@@ -35,14 +33,11 @@ public class IncantesimoClonazione {
     private static final long EMPTY_BOARD_HASH = 0L;
     private Long[] firstChildren; 
 
-    static {
-        
-    }
 
     /**
      * Costruttore
      */
-    public IncantesimoClonazione(int M, int N) {
+    public Clonazione(int M, int N) {
         map = new HashMap<Long, Mongolfiera>();
         BOARD_ROW_SIZE = M;
         BOARD_COL_SIZE = N;
@@ -84,17 +79,17 @@ public class IncantesimoClonazione {
         Mongolfiera newGameState =  new Mongolfiera(board, score, roundMarkedCell, maximizingPlayer, startingMove);
         if(map.containsKey(hash)){
             map.replace(hash, newGameState);
-            //System.out.println(" Sostituita board" + " score: " + score); 
+            System.out.println("Sostituita board");
             }
         else
             map.put(hash, newGameState);
-            //System.out.println(" Aggiunta board" + " score: " + score);
+            System.out.println("Aggiunta board" + " score: " + score);
     }
 
     /**
      * Restituisce la Mongolfiera associata alla board passata come parametro
      * @param board
-     * @return Mongolfiera
+     * @return
      */
     public Mongolfiera getMongolfiera(CXBoard board) {
         long hash = getBoardHash(board);
@@ -112,14 +107,56 @@ public class IncantesimoClonazione {
      */
     public long getBoardHash(CXBoard board) {
         long hash = EMPTY_BOARD_HASH;
-        try{
-                CXCell[] markedCells = board.getMarkedCells();
+        CXCell[] markedCells = board.getMarkedCells();
+        /*
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                CXCellState state = board.cellState(i, j);
+                if (state != CXCellState.FREE) {
+                    hash ^= ZOBRIST_TABLE[i][j];
+                }
+            }
+        }
+        */
         for(CXCell i : markedCells){
             hash ^= ZOBRIST_TABLE[i.i][i.j];
         }
-        }catch(Exception e){ System.out.println("ArrayIndex nel getBoard");}
         return hash;
     }
+
+    /**
+     * Metodo fnv1aHash
+     * Restituisce l'hash associato alla board passata come parametro
+     * @param board
+     * @return hash
+     */
+    public long getKey(CXBoard board) {
+		byte[] hash = new byte[board.numOfMarkedCells() * 2];
+		int index = 0;
+		for (CXCell cell : board.getMarkedCells()) {
+			hash[index++] = (byte) cell.i;
+			hash[index++] = (byte) cell.j;
+		}
+		long key = fnv1aHash(hash);
+		return key;
+	}
+
+    /**
+     * Metodo fnv1aHash
+     * Restituisce l'hash associato ai byte passati come parametro
+     * @param byte[] data
+     * @return hash
+     */
+	public long fnv1aHash(byte[] data) {
+		final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
+		final long FNV_PRIME = 0x100000001b3L;
+		long hash = FNV_OFFSET_BASIS;
+		for (byte b : data) {
+			hash ^= b;
+			hash *= FNV_PRIME;
+		}
+		return hash;
+	}
 
 
     /**
@@ -139,12 +176,11 @@ public class IncantesimoClonazione {
     public float getChildrenScore(CXBoard board, List<Mongolfiera> L, boolean maximizingPlayer,int roundMarkedCell){
         float maxScore = maximizingPlayer ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
         float score;
-        try{
         Integer[] availableColumns = board.getAvailableColumns();
         Mongolfiera mongolfiera;
         for(int i : availableColumns){
             board.markColumn(i);
-            long key = getBoardHash(board);
+            long key = getKey(board);
             if(map.containsKey(key)){
                 mongolfiera = map.get(key);
                 if(map.get(key).markedCells == roundMarkedCell){
@@ -168,10 +204,9 @@ public class IncantesimoClonazione {
                     });
                 }
             }
-            //System.err.println("lunghezza della lista di mongolfiere: " + (L.size()));
             board.unmarkColumn();
         }
-    } catch (Error e) { System.err.println("ArrayIndexOutOfBoundsException in getchildren"); }
+        System.err.println("\t\t\t\tmaxScore: " + maxScore);
         return maxScore;
     }
 
@@ -182,46 +217,18 @@ public class IncantesimoClonazione {
      * @param board
      * @param col colonna scelta per la mossa successiva (quella da tenere)
      */
-    /*
     public void deleteChildren(CXBoard board, int col){
-        try{
-        List<Integer> availableColumns = new ArrayList<>(Arrays.asList(board.getAvailableColumns()));
-        availableColumns.remove(col);
-        for(int i : availableColumns){
+       List<Integer> availableColumns = new ArrayList<>(Arrays.asList(board.getAvailableColumns()));
+       availableColumns.remove(col);
+       for(int i : availableColumns){
             board.markColumn(i);
             long key = getBoardHash(board);
             if(map.containsKey(key))
+                System.out.println("Rimosso board");
                 map.remove(key);
             board.unmarkColumn();
        }
-    } catch (Error e) { System.err.println("ArrayIndexOutOfBoundsException in deleteChildren"); }   
     }
-    */
-    
-    
-    public void deleteChildren(CXBoard board, int col){
-        try {
-            Integer[] availableColumns = board.getAvailableColumns();
-            for(int i = 0; i < availableColumns.length; i++){
-                if(availableColumns[i] == col)
-                    continue;
-                // Check if index i is valid before marking column
-                if (availableColumns[i] >= 0) {
-                    board.markColumn(availableColumns[i]);
-                    long key = getBoardHash(board);
-                    if(map.containsKey(key))
-                        map.remove(key);
-                    // Check if index i is valid before unmarking column
-                    if (availableColumns[i] >= 0) {
-                        board.unmarkColumn();
-                    }
-                }
-            }
-        } catch (Exception e) { 
-            System.err.println("Exception in deleteChildren: " + e); 
-        }   
-    }
-
 
     /**
      * Crea una nuova Mongolfiera
@@ -236,4 +243,5 @@ public class IncantesimoClonazione {
         Mongolfiera mongolfiera = new Mongolfiera(board, score, col, maximizingPlayer, startingMove);
         return mongolfiera;
     }
+
 }

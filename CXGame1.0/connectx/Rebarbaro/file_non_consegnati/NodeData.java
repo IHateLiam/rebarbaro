@@ -1,10 +1,7 @@
-package connectx.RebarbaroHashish;
+package connectx.Rebarbaro;
 
 import connectx.CXBoard;
-import connectx.CXGameState;
-import connectx.CXCellState;
 import connectx.CXCell;
-import java.util.LinkedList;
 
 /**
  * NodeData e' una classe che permette di memorizzare
@@ -57,3 +54,4 @@ public class NodeData {
         this.maximizingPlayer = maximizingPlayer;
     }
 }
+ 
